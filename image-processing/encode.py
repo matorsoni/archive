@@ -100,9 +100,7 @@ def main():
 
     dump_img_bits(img, prefix="out")
 
-    t = read_text_from_image(img)
-
-    cv2.imwrite("nho.png", img)
+    cv2.imwrite(out_img_path_str, img)
 
 if __name__ == "__main__":
     main()

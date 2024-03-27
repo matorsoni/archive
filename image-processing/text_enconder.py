@@ -60,13 +60,14 @@ def read_text_from_image(image: np.array) -> str:
     text_length = (np.uint32(chars[6]) << 8)  | text_length
     text_length = np.uint32(chars[7])         | text_length
 
-    print(header_text)
-    print(text_length)
+    if header_text != "TEXT":
+        print(f"Decode error: invalid header \"{header_text}\"")
+        return None
 
     chars = []
     text = ''
-    for c in range(8, text_length):
+    for c in range(8, text_length + 8):
         i,j = divmod(c, image.shape[1])
         text += chr(bgr_into_char(image[i,j]))
-    print(text)
 
+    return text
