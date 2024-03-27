@@ -34,7 +34,7 @@ def text_into_image(text: str, image: np.array) -> None:
     len8_0 = np.uint8( len32 & 0b11111111)
     len8_1 = np.uint8((len32 & (0b11111111 << 8)) >> 8)
     len8_2 = np.uint8((len32 & (0b11111111 << 16)) >> 16)
-    len8_3 = np.uint8((len32 & (0b11111111 << 16)) >> 24)
+    len8_3 = np.uint8((len32 & (0b11111111 << 24)) >> 24)
     header = "TEXT" + chr(len8_3) + chr(len8_2) + chr(len8_1) + chr(len8_0)
 
     new_text = header + text
@@ -44,7 +44,6 @@ def text_into_image(text: str, image: np.array) -> None:
 
     for c in range(new_len32):
         i,j = divmod(c, image.shape[1])
-        #image[i,j] = char_into_bgr(np.uint8(ord(new_text[c])), image[i,j])
         char_into_bgr(np.uint8(ord(new_text[c])), image[i,j])
 
 def read_text_from_image(image: np.array) -> str:
