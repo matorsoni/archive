@@ -5,7 +5,7 @@ import sys
 import cv2
 import numpy as np
 
-from text_enconder import *
+from utils import decode_text_from_image
 
 def main():
     parser = argparser()
@@ -32,7 +32,7 @@ def main():
 
     assert img.dtype == np.uint8
 
-    text = read_text_from_image(img)
+    text = decode_text_from_image(img)
     if text == None:
         sys.exit(1)
 

@@ -38,7 +38,7 @@ def bgr_into_char(bgr: np.array) -> np.uint8:
 
     return c
 
-def text_into_image(text: str, image: np.array) -> None:
+def encode_text_into_image(text: str, image: np.array) -> None:
     assert image.dtype == np.uint8
 
     # Create text header, which consists of 8 characters:
@@ -58,7 +58,7 @@ def text_into_image(text: str, image: np.array) -> None:
         i,j = divmod(c, image.shape[1])
         char_into_bgr(np.uint8(ord(new_text[c])), image[i,j])
 
-def read_text_from_image(image: np.array) -> str:
+def decode_text_from_image(image: np.array) -> str:
     assert image.dtype == np.uint8
 
     # Read header
@@ -83,3 +83,31 @@ def read_text_from_image(image: np.array) -> str:
         text += chr(bgr_into_char(image[i,j]))
 
     return text
+
+def dump_img_bits(img: np.array, prefix: str = "img") -> None:
+    '''
+    For each channel in an image, write binary images to disk containing
+    the n-th bits of that color. Mainly used for debugging.
+
+    So, for 3 channels with 8 bits -> 24 binary images.
+    '''
+    import cv2
+
+    assert img.dtype == np.uint8
+    assert img.shape[2] == 3
+
+    b = img[:,:,0]
+    g = img[:,:,1]
+    r = img[:,:,2]
+
+    for i in range(8):
+        # Take a grayscale 8bit channel and extract its n-th bit.
+        # For n in (0,1,2,3,4,5,6,7) we have:
+        # (c & 0b00000001) * 255
+        # (c & 0b00000010) * 127
+        # (c & 0b00000100) * 63, etc...
+        # Note that most significant bits get attenuated: max values are (255,254,252,248,240,224,192,128).
+        # But it's ok for now, since it's only used for debugging.
+        cv2.imwrite( prefix + f"_b_bit{i}.png", (b & (1 << i)) * (255 >> i) )
+        cv2.imwrite( prefix + f"_g_bit{i}.png", (g & (1 << i)) * (255 >> i) )
+        cv2.imwrite( prefix + f"_r_bit{i}.png", (r & (1 << i)) * (255 >> i) )

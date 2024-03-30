@@ -5,7 +5,7 @@ import sys
 import cv2
 import numpy as np
 
-from text_enconder import *
+from utils import encode_text_into_image, dump_img_bits
 
 def main():
     parser = argparser()
@@ -61,7 +61,7 @@ def main():
     # Uncomment to dump input image bits
     #dump_img_bits(img, prefix="in")
 
-    text_into_image(text, img)
+    encode_text_into_image(text, img)
 
     # Uncomment to dump output image bits
     #dump_img_bits(img, prefix="out")
@@ -94,32 +94,6 @@ def argparser() -> argparse.ArgumentParser:
 
     return parser
 
-def dump_img_bits(img: np.array, prefix: str = "img") -> None:
-    '''
-    For each channel in an image, write binary images to disk containing
-    the n-th bits of that color. Mainly used for debugging.
-
-    So, for 3 channels with 8 bits -> 24 binary images.
-    '''
-
-    assert img.dtype == np.uint8
-    assert img.shape[2] == 3
-
-    b = img[:,:,0]
-    g = img[:,:,1]
-    r = img[:,:,2]
-
-    for i in range(8):
-        # Take a grayscale 8bit channel and extract its n-th bit.
-        # For n in (0,1,2,3,4,5,6,7) we have:
-        # (c & 0b00000001) * 255
-        # (c & 0b00000010) * 127
-        # (c & 0b00000100) * 63, etc...
-        # Note that most significant bits get attenuated: max values are (255,254,252,248,240,224,192,128).
-        # But it's ok for now, since it's only used for debugging.
-        cv2.imwrite( prefix + f"_b_bit{i}.png", (b & (1 << i)) * (255 >> i) )
-        cv2.imwrite( prefix + f"_g_bit{i}.png", (g & (1 << i)) * (255 >> i) )
-        cv2.imwrite( prefix + f"_r_bit{i}.png", (r & (1 << i)) * (255 >> i) )
 
 if __name__ == "__main__":
     main()
