@@ -1,6 +1,16 @@
 import numpy as np
 
 def char_into_bgr(c: np.uint8, bgr: np.array) -> np.array:
+    '''
+    Encodes a uint8 character in a BGR (uint8) pixel by replacing the pixel's least
+    significant bits per channel.
+    3 bits in Blue, 2 bits in Green, 3 bits in Red.
+
+    Example:
+    Input 24-bit pixel BBBBBBBB|GGGGGGGG|RRRRRRRR
+    Input 8-bit character 'X' == 88 == 01011000
+    Output 24-bit pixel BBBBB000|GGGGGG11|RRRRR010
+    '''
     assert bgr.dtype == np.uint8
     assert bgr.shape == (3,)
 
@@ -15,6 +25,9 @@ def char_into_bgr(c: np.uint8, bgr: np.array) -> np.array:
     return bgr
 
 def bgr_into_char(bgr: np.array) -> np.uint8:
+    '''
+    Retrieves the character encoded by `char_into_bgr` in a BGR pixel.
+    '''
     assert bgr.dtype == np.uint8
     assert bgr.shape == (3,)
 
@@ -40,7 +53,6 @@ def text_into_image(text: str, image: np.array) -> None:
     new_text = header + text
     new_len32 = np.uint32(len(new_text))
     assert new_len32 == len32 + 8
-    #tarray = np.frombuffer(new_text.encode(), dtype=np.uint8, count=new_len32)
 
     for c in range(new_len32):
         i,j = divmod(c, image.shape[1])
@@ -61,7 +73,7 @@ def read_text_from_image(image: np.array) -> str:
     text_length = np.uint32(chars[7])         | text_length
 
     if header_text != "TEXT":
-        print(f"Decode error: invalid header \"{header_text}\"")
+        print(f"Decode error: invalid header \"{header_text}\", image has no encoded text.")
         return None
 
     chars = []

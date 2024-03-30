@@ -7,6 +7,67 @@ import numpy as np
 
 from text_enconder import *
 
+def main():
+    parser = argparser()
+    args = parser.parse_args()
+    img_path_str = args.input
+    text_path_str = args.text
+    out_img_path_str = args.output
+
+    # Check input image path
+    img_path = Path(img_path_str)
+    if not img_path.exists() or not img_path.is_file():
+        print(f"Invalid input image file name: {img_path_str}")
+        sys.exit(1)
+
+    # Check input text path
+    if text_path_str is None:
+        text_path_str = str(Path(__file__).parent / "default_text.txt")
+
+    text_path = Path(text_path_str)
+
+    if not text_path.exists() or not text_path.is_file():
+        print("Invalid input text file name: {text_path_str}")
+        sys.exit(1)
+
+    # Check output image path
+    if out_img_path_str is None:
+        out_img_path_str = str(img_path.parent / f"encoded_{img_path.stem}.png")
+
+    if Path(out_img_path_str).suffix != ".png":
+        print("Error: output image must be .png")
+        sys.exit(1)
+
+    # Read inputs
+    img = cv2.imread(img_path_str)
+    img_size = img.shape[0] * img.shape[1]
+    text = text_path.read_text()
+    text_length = len(text)
+
+    print(f"Input image: {img_size} ({img.shape[0]}x{img.shape[1]}) RGB pixels.")
+    print(f"    {img_path_str}")
+    print(f"Input text: {text_length} characters.")
+    print(f"    {text_path_str}")
+
+    if img_size < text_length + 8:
+        print("Error: Text is too long to fit reasonably in the input image.")
+        sys.exit(1)
+
+    print(f"Output image: {out_img_path_str}")
+
+    if img.dtype != np.uint8:
+        img = np.array(img, dtype=np.uint8)
+
+    # Uncomment to dump input image bits
+    #dump_img_bits(img, prefix="in")
+
+    text_into_image(text, img)
+
+    # Uncomment to dump output image bits
+    #dump_img_bits(img, prefix="out")
+
+    cv2.imwrite(out_img_path_str, img)
+
 def argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog='encoder',
@@ -25,6 +86,12 @@ def argparser() -> argparse.ArgumentParser:
         required=False,
     )
 
+    parser.add_argument(
+        '-o', '--output',
+        help="Output image file (.png)",
+        required=False,
+    )
+
     return parser
 
 def dump_img_bits(img: np.array, prefix: str = "img") -> None:
@@ -35,20 +102,6 @@ def dump_img_bits(img: np.array, prefix: str = "img") -> None:
     So, for 3 channels with 8 bits -> 24 binary images.
     '''
 
-    def _extract_bit_n(c: np.array, n: int) -> np.array:
-        '''
-        Take a grayscale 8bit channel and extract its n-th bit.
-        For n = (0,1,2,3,4,5,6,7) we have:
-        (c & 0b00000001) * 255
-        (c & 0b00000010) * 127
-        (c & 0b00000100) * 63, etc...
-
-        Note that most significant bits get attenuated: max values are (255,254,252,248,240,224,192,128).
-        But it's ok for now, since it's only used for debugging.
-        '''
-        assert n >= 0 and n < 8
-        return (c & (1 << n)) * (255 >> n)
-
     assert img.dtype == np.uint8
     assert img.shape[2] == 3
 
@@ -57,51 +110,16 @@ def dump_img_bits(img: np.array, prefix: str = "img") -> None:
     r = img[:,:,2]
 
     for i in range(8):
+        # Take a grayscale 8bit channel and extract its n-th bit.
+        # For n in (0,1,2,3,4,5,6,7) we have:
+        # (c & 0b00000001) * 255
+        # (c & 0b00000010) * 127
+        # (c & 0b00000100) * 63, etc...
+        # Note that most significant bits get attenuated: max values are (255,254,252,248,240,224,192,128).
+        # But it's ok for now, since it's only used for debugging.
         cv2.imwrite( prefix + f"_b_bit{i}.png", (b & (1 << i)) * (255 >> i) )
         cv2.imwrite( prefix + f"_g_bit{i}.png", (g & (1 << i)) * (255 >> i) )
         cv2.imwrite( prefix + f"_r_bit{i}.png", (r & (1 << i)) * (255 >> i) )
 
-
-def main():
-    parser = argparser()
-    args = parser.parse_args()
-    img_path_str = args.input
-    text_path_str = args.text
-
-    # Check received arguments
-    img_path = Path(img_path_str)
-    if not img_path.exists() or not img_path.is_file():
-        print(f"Invalid input image file name: {img_path_str}")
-        sys.exit(1)
-
-    out_img_path_str = str(img_path.parent / f"encoded_{img_path.name}")
-
-    if text_path_str is None:
-        text_path_str = str(Path(__file__).parent / "default_text.txt")
-
-    text_path = Path(text_path_str)
-
-    if not text_path.exists() or not text_path.is_file():
-        print("Invalid input text file name: {text_path_str}")
-        sys.exit(1)
-
-    # Read inputs
-    img = cv2.imread(img_path_str)
-    text = text_path.read_text()
-    print(f"Input image: {img.shape[0]}x{img.shape[1]} pixels.")
-    print(f"Input text: {len(text)} characters.")
-
-    if img.dtype != np.uint8:
-        img = np.array(img, dtype=np.uint8)
-
-    dump_img_bits(img, prefix="in")
-
-    text_into_image(text, img)
-
-    dump_img_bits(img, prefix="out")
-
-    cv2.imwrite(out_img_path_str, img)
-
 if __name__ == "__main__":
     main()
-
