@@ -58,6 +58,60 @@ def main():
     cv2.imwrite(out_img_path_str, 255*abs(img_restored))
 
 
+
+
+    def do_nothing(x):
+        pass
+
+    h, w = img_gray.shape
+    img_left = np.zeros(img_gray.shape, np.uint8)
+    img_left[:] = 255*img_gray
+
+    img_middle = np.zeros(img_gray.shape, np.uint8)
+
+    img_right = np.zeros(img_gray.shape, np.uint8)
+    img_right[:] = 255*abs(img_restored)
+
+    img = np.zeros((h, 3*w), np.uint8)
+    img[:, 0:w] = img_left[:]
+    img[:, 2*w:3*w] = img_right[:]
+
+    # Create interactive window with sliders for parameter control.
+    window = "Fourier Filter"
+    inner = "Inner radius"
+    outer = "Outer radius"
+    cv2.namedWindow(window)
+    cv2.createTrackbar(inner, window, 0, 100, do_nothing)
+    cv2.createTrackbar(outer, window, 0, 100, do_nothing)
+
+    # Switch FFT On/Off.
+    switch = '0 : OFF \n1 : ON'
+    cv2.createTrackbar(switch, window, 0, 1, do_nothing)
+
+    # Main loop.
+    while(True):
+        inner_r = cv2.getTrackbarPos(inner, window)
+        outer_r = cv2.getTrackbarPos(outer, window)
+        s = cv2.getTrackbarPos(switch, window)
+
+        if s == 0:
+            masked_fft = img_fft
+        else:
+            masked_fft = circle_mask(img_fft, inner_r)
+
+        filtered = 255*abs(np.fft.ifft2(np.fft.fftshift(masked_fft)))
+        img[:, w:2*w] = np.abs(masked_fft)
+        img[:, 2*w:3*w] = np.abs(filtered)
+
+        cv2.imshow(window, img)
+        k = cv2.waitKey(1) & 0xFF
+        if k == 27:
+            break
+
+    cv2.destroyAllWindows()
+
+
+
 def argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog='Fourier Filter',
