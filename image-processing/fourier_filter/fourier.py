@@ -5,6 +5,17 @@ import sys
 import cv2
 import numpy as np
 
+def circle_mask(img: np.array, radius: int) -> np.array:
+    assert len(img.shape) == 2
+    cols, rows = img.shape
+    mask = np.zeros(img.shape, dtype = np.uint8)
+    for i in range(rows):
+        for j in range(cols):
+            shifted_i = i-rows/2
+            shifted_j = j-cols/2
+            mask[i,j] = 1 if shifted_i*shifted_i + shifted_j*shifted_j <= radius*radius else 0
+    return mask * img
+
 def main():
     parser = argparser()
     args = parser.parse_args()
@@ -19,7 +30,7 @@ def main():
 
     # Check output image path
     if out_img_path_str is None:
-        out_img_path_str = str(img_path.with_name("filtered_" + img_path.name))
+        out_img_path_str = str(Path(__file__).with_name("filtered_" + img_path.name))
 
     if Path(out_img_path_str).suffix != ".png":
         print("Error: output image must be .png")
@@ -34,10 +45,17 @@ def main():
     print(f"    {img_path_str}")
     print(f"Output image: {out_img_path_str}")
 
-    ## Interactive Fourier Filter
+    # Convert to grayscale in [0, 1.0] float.
+    img = img.astype(float) / 255.0
+    img_gray = (img[:,:,0] + img[:,:,1] + img[:,:,2]) / 3.0
 
-    ## Write output image
-    cv2.imwrite(out_img_path_str, img)
+    # Frequency domain image shifted to center.
+    img_fft = np.fft.fftshift(np.fft.fft2(img_gray))
+    cv2.imwrite(out_img_path_str+"fft.png", np.abs(circle_mask(img_fft, 100)))
+
+    # Write output image.
+    img_restored = np.fft.ifft2(np.fft.fftshift(img_fft))
+    cv2.imwrite(out_img_path_str, 255*abs(img_restored))
 
 
 def argparser() -> argparse.ArgumentParser:
