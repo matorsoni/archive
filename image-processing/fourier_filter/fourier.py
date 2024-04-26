@@ -9,11 +9,13 @@ def circle_mask(img: np.array, radius: int) -> np.array:
     assert len(img.shape) == 2
     cols, rows = img.shape
     mask = np.zeros(img.shape, dtype = np.uint8)
+    mask_radius = int(radius/200.0 * min(rows, cols))
+    # TODO: Rewrite with np.indices(img.shape)
     for i in range(rows):
         for j in range(cols):
             shifted_i = i-rows/2
             shifted_j = j-cols/2
-            mask[i,j] = 1 if shifted_i*shifted_i + shifted_j*shifted_j <= radius*radius else 0
+            mask[i,j] = 1 if shifted_i*shifted_i + shifted_j*shifted_j <= mask_radius*mask_radius else 0
     return mask * img
 
 def main():
@@ -29,6 +31,7 @@ def main():
         sys.exit(1)
 
     # Check output image path
+    # If none is given, write to the same folder as this script
     if out_img_path_str is None:
         out_img_path_str = str(Path(__file__).with_name("filtered_" + img_path.name))
 
@@ -51,36 +54,20 @@ def main():
 
     # Frequency domain image shifted to center.
     img_fft = np.fft.fftshift(np.fft.fft2(img_gray))
-    cv2.imwrite(out_img_path_str+"fft.png", np.abs(circle_mask(img_fft, 100)))
 
-    # Write output image.
-    img_restored = np.fft.ifft2(np.fft.fftshift(img_fft))
-    cv2.imwrite(out_img_path_str, 255*abs(img_restored))
-
-
-
-
-    def do_nothing(x):
-        pass
-
+    # Interactive visualization
+    # Allocate display image with size 3 times the input image
     h, w = img_gray.shape
-    img_left = np.zeros(img_gray.shape, np.uint8)
-    img_left[:] = 255*img_gray
-
-    img_middle = np.zeros(img_gray.shape, np.uint8)
-
-    img_right = np.zeros(img_gray.shape, np.uint8)
-    img_right[:] = 255*abs(img_restored)
-
-    img = np.zeros((h, 3*w), np.uint8)
-    img[:, 0:w] = img_left[:]
-    img[:, 2*w:3*w] = img_right[:]
+    display_img = np.zeros((h, 3*w), np.uint8)
+    display_img[:, 0:w] = 255*img_gray
+    display_img[:, 2*w:3*w] = 0
 
     # Create interactive window with sliders for parameter control.
     window = "Fourier Filter"
     inner = "Inner radius"
     outer = "Outer radius"
     cv2.namedWindow(window)
+    def do_nothing(x): pass   # Trackbar callback does not need to do anything
     cv2.createTrackbar(inner, window, 0, 100, do_nothing)
     cv2.createTrackbar(outer, window, 0, 100, do_nothing)
 
@@ -90,25 +77,34 @@ def main():
 
     # Main loop.
     while(True):
+        # Read value set on the UI
         inner_r = cv2.getTrackbarPos(inner, window)
         outer_r = cv2.getTrackbarPos(outer, window)
         s = cv2.getTrackbarPos(switch, window)
 
-        if s == 0:
-            masked_fft = img_fft
-        else:
-            masked_fft = circle_mask(img_fft, inner_r)
+        # Update frequency domain image with binary mask and also the final image
+        masked_fft = img_fft if s == 0 else circle_mask(img_fft, inner_r)
+        filtered = 255*np.abs(np.fft.ifft2(np.fft.fftshift(masked_fft)))
 
-        filtered = 255*abs(np.fft.ifft2(np.fft.fftshift(masked_fft)))
-        img[:, w:2*w] = np.abs(masked_fft)
-        img[:, 2*w:3*w] = np.abs(filtered)
+        # Write images to the display and render
+        display_img[:, w:2*w] = np.abs(masked_fft)
+        display_img[:, 2*w:3*w] = filtered
+        cv2.imshow(window, display_img)
 
-        cv2.imshow(window, img)
+        # Close window with the ESC key.
+        # TODO: improve the close condition
         k = cv2.waitKey(1) & 0xFF
         if k == 27:
             break
 
     cv2.destroyAllWindows()
+
+    # Write frequency domain image to disk
+    fft_img_path_str = str(Path(out_img_path_str).with_name("fft_filtered_" + img_path.name))
+    cv2.imwrite(fft_img_path_str, np.abs(masked_fft))
+
+    # Write output image to disk
+    cv2.imwrite(out_img_path_str, filtered)
 
 
 
