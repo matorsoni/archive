@@ -8,6 +8,7 @@ import numpy as np
 def circle_mask(img: np.array, inner: int, outer: int, flip: bool) -> np.array:
     assert len(img.shape) == 2
     assert inner <= outer
+
     rows, cols = img.shape
     mask = np.ones(img.shape, dtype = bool)
     if flip:
@@ -16,7 +17,8 @@ def circle_mask(img: np.array, inner: int, outer: int, flip: bool) -> np.array:
     # Input values range from 0 to 100, so divide by 200 to get radius
     inner_radius = int(inner/200.0 * min(rows, cols))
     outer_radius = int(outer/200.0 * min(rows, cols))
-    # TODO: Rewrite with np.indices(img.shape)
+
+    # Create circle shape using np.indices for vectorized performance
     row_ind, col_ind = np.indices(img.shape, dtype=np.float32)
     row_ind -= rows/2.0
     col_ind -= cols/2.0
@@ -42,7 +44,7 @@ def main():
     # Check output image path
     # If none is given, write to the same folder as this script
     if out_img_path_str is None:
-        out_img_path_str = str(Path(__file__).with_name("filtered_" + img_path.name))
+        out_img_path_str = str(Path(__file__).with_name("filtered_{img_path.stem}.png"))
 
     if Path(out_img_path_str).suffix != ".png":
         print("Error: output image must be .png")
@@ -77,14 +79,18 @@ def main():
     outer = "Outer radius"
     switch = "FFT filter On/Off"
     flip = "Flip filter On/Off"
+
     cv2.namedWindow(window)
     def do_nothing(x): pass   # Trackbar callback does not need to do anything
+
     cv2.createTrackbar(inner, window, 0, 100, do_nothing)
-    cv2.setTrackbarPos(inner, window, 100)
+    cv2.setTrackbarPos(inner, window, 50)
     cv2.createTrackbar(outer, window, 0, 100, do_nothing)
     cv2.setTrackbarPos(outer, window, 100)
     cv2.createTrackbar(switch, window, 0, 1, do_nothing)
+    cv2.setTrackbarPos(switch, window, 1)
     cv2.createTrackbar(flip, window, 0, 1, do_nothing)
+    cv2.setTrackbarPos(flip, window, 0)
 
     # Main loop.
     while(True):
@@ -102,10 +108,17 @@ def main():
         masked_fft = img_fft if switch_on == 0 else circle_mask(img_fft, inner_r, outer_r, flip_on)
         filtered = 255*np.abs(np.fft.ifft2(np.fft.fftshift(masked_fft)))
 
-        # Write images to the display and render
+        # Write pixels to the display image
         display_img[:, w:2*w] = np.abs(masked_fft)
         display_img[:, 2*w:3*w] = filtered
-        cv2.imshow(window, display_img)
+
+        # Resize to keep a window width of 1600 pixels
+        if display_img.shape[1] > 1920:
+            scale = 1600.0 / display_img.shape[1]
+        else:
+            scale = 1.0
+        resized = cv2.resize(display_img, (0,0), fx=scale, fy=scale)
+        cv2.imshow(window, resized)
 
         # Close window with the ESC key.
         # TODO: improve the close condition
