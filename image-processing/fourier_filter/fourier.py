@@ -15,8 +15,8 @@ def circle_mask(img: np.array, inner: int, outer: int, flip: bool) -> np.array:
         mask = ~mask
 
     # Input values range from 0 to 100, so divide by 200 to get radius
-    inner_radius = int(inner/200.0 * min(rows, cols))
-    outer_radius = int(outer/200.0 * min(rows, cols))
+    inner_radius = int(inner/200.0 * min(rows, cols) * 1.42)
+    outer_radius = int(outer/200.0 * max(rows, cols) * 1.42)
 
     # Create circle shape using np.indices for vectorized performance
     row_ind, col_ind = np.indices(img.shape, dtype=np.float32)
@@ -44,7 +44,7 @@ def main():
     # Check output image path
     # If none is given, write to the same folder as this script
     if out_img_path_str is None:
-        out_img_path_str = str(Path(__file__).with_name("filtered_{img_path.stem}.png"))
+        out_img_path_str = str(Path(__file__).with_name(f"filtered_{img_path.stem}.png"))
 
     if Path(out_img_path_str).suffix != ".png":
         print("Error: output image must be .png")
@@ -113,7 +113,7 @@ def main():
         display_img[:, 2*w:3*w] = filtered
 
         # Resize to keep a window width of 1600 pixels
-        if display_img.shape[1] > 1920:
+        if display_img.shape[1] > 1600:
             scale = 1600.0 / display_img.shape[1]
         else:
             scale = 1.0
