@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 
-def rotate_image(image, angle):
+def rotate_image(image: np.array, angle: float):
     image_center = tuple(np.array(image.shape[1::-1]) / 2)
     rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
     result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_NEAREST)
@@ -36,6 +36,21 @@ def aligment_by_projection(img: np.array) -> float:
 
     return result_angle
 
+def alignment_by_hough(img: np.array):
+    assert len(img.shape) == 2  # img is grayscale
+    edge_img = cv2.Canny(img, 50, 200, None, 3)
+    lines_acc = cv2.HoughLinesWithAccumulator(edge_img, 1, np.pi / 180, 150, None, 0, 0)
+
+    theta_acc = 0.0
+    votes_acc = 0.0
+    for i in range(min(3, len(lines_acc))):
+        rho, theta, votes = lines_acc[i][0]
+        theta_acc += theta * votes
+        votes_acc += votes
+
+    angle = theta_acc / votes_acc
+
+    return np.rad2deg(angle) - 90.0
 
 def main():
     img_path_str, out_img_path_str = parse_arguments()
@@ -63,7 +78,7 @@ def main():
     img[white_mask] = 0
 
     print(aligment_by_projection(img))
-
+    print(alignment_by_hough(img))
 
 
 def argparser() -> argparse.ArgumentParser:
