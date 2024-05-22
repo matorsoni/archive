@@ -39,7 +39,10 @@ def aligment_by_projection(img: np.array) -> float:
 def alignment_by_hough(img: np.array):
     assert len(img.shape) == 2  # img is grayscale
     edge_img = cv2.Canny(img, 50, 200, None, 3)
-    lines_acc = cv2.HoughLinesWithAccumulator(edge_img, 1, np.pi / 180, 150, None, 0, 0)
+    rho_accuracy = 1
+    theta_accuracy = np.pi / 180
+    vote_threshold = 30
+    lines_acc = cv2.HoughLinesWithAccumulator(edge_img, rho_accuracy, theta_accuracy, vote_threshold, None, 0, 0)
 
     theta_acc = 0.0
     votes_acc = 0.0
