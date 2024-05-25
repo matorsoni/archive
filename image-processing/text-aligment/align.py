@@ -9,7 +9,7 @@ import numpy as np
 def rotate_image(image: np.array, angle: float):
     image_center = tuple(np.array(image.shape[1::-1]) / 2)
     rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-    result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_NEAREST)
+    result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
     return result
 
 def aligment_by_projection(img: np.array) -> float:
@@ -56,19 +56,19 @@ def alignment_by_hough(img: np.array):
     return np.rad2deg(angle) - 90.0
 
 def main():
-    img_path_str, out_img_path_str = parse_arguments()
+    img_path_str, out_img_path_str, mode = parse_arguments()
 
     # Read image
-    img = cv2.imread(img_path_str)
-    if img.dtype != np.uint8:
-        img = np.array(img, dtype=np.uint8)
+    input_img = cv2.imread(img_path_str)
+    if input_img.dtype != np.uint8:
+        input_img = np.array(input_img, dtype=np.uint8)
 
-    print(f"Input image: {img.shape[0]}x{img.shape[1]} pixels.")
-    print(f"    {img_path_str}")
+    print(f"Input image: {img_path_str}")
     print(f"Output image: {out_img_path_str}")
+    print(f"Mode: {mode}")
 
-    # Make image grayscale.
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # Convert image to grayscale.
+    img = cv2.cvtColor(input_img, cv2.COLOR_BGR2GRAY)
 
     # Apply threshold to make image binary.
     # In images of text files this should provide a good result most of the time.
@@ -80,9 +80,16 @@ def main():
     img[black_mask] = 255
     img[white_mask] = 0
 
-    print(aligment_by_projection(img))
-    print(alignment_by_hough(img))
+    if mode == "PROJ":
+        angle = aligment_by_projection(img)
+        print(f"Alignment angle: {angle:02f} degrees")
+    else:
+        assert mode == "HOUGH"
+        angle = alignment_by_hough(img)
+        print(f"Alignment angle: {angle:02f} degrees")
 
+    # Write output image to disk
+    cv2.imwrite(out_img_path_str, rotate_image(input_img, angle))
 
 def argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -102,6 +109,12 @@ def argparser() -> argparse.ArgumentParser:
         required=False,
     )
 
+    parser.add_argument(
+        '-m', '--mode',
+        help="Align mode: either PROJ or HOUGH",
+        required=True,
+    )
+
     return parser
 
 def parse_arguments() -> tuple[str, str]:
@@ -109,6 +122,7 @@ def parse_arguments() -> tuple[str, str]:
     args = parser.parse_args()
     img_path_str = args.input
     out_img_path_str = args.output
+    mode = args.mode
 
     # Check input image path
     img_path = Path(img_path_str)
@@ -125,7 +139,11 @@ def parse_arguments() -> tuple[str, str]:
         print("Error: output image must be .png")
         sys.exit(1)
 
-    return img_path_str, out_img_path_str
+    if mode != "PROJ" and mode != "HOUGH":
+        print("Error: mode must be either PROJ or HOUGH")
+        sys.exit(1)
+
+    return img_path_str, out_img_path_str, mode
 
 
 if __name__ == "__main__":
