@@ -72,7 +72,7 @@ def main():
 
     # Apply threshold to make image binary.
     # In images of text files this should provide a good result most of the time.
-    thr, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+    thr, img = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY)
 
     # Invert the binary values: background now is black (0) and text is white (255).
     black_mask = (img == 0)
