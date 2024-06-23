@@ -58,7 +58,7 @@ def parse_arguments() -> tuple[str, str]:
     # Check output image path
     # If none is given, write to the same folder as this script
     if out_img_path_str is None:
-        out_img_path_str = str(Path(__file__).with_name(f"aligned_{img_path.stem}.png"))
+        out_img_path_str = str(Path(__file__).with_name(f"panorama_{img_path.stem}.png"))
 
     if Path(out_img_path_str).suffix != ".png":
         print("Error: output image must be .png")
