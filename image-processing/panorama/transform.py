@@ -7,7 +7,7 @@ import numpy as np
 
 
 # Scale transform
-def scale(img, scale):
+def apply_scale(img, scale):
     assert scale > 0.0
 
     new_height = int(scale * img.shape[0])
@@ -32,7 +32,7 @@ def scale(img, scale):
 
     return new_img
 
-def rotation(img, angle_deg):
+def apply_rotation(img, angle_deg):
     angle = np.deg2rad(angle_deg)
 
     # computing BB for new image
@@ -77,7 +77,7 @@ def rotation(img, angle_deg):
 
 
 def main():
-    img_path_str, out_img_path_str = parse_arguments()
+    img_path_str, out_img_path_str, scale, angle = parse_arguments()
 
     # Read image
     input_img = cv2.imread(img_path_str)
@@ -88,8 +88,8 @@ def main():
     print(f"    Path: {img_path_str}")
     print(f"    Dimensions: {input_img.shape[0]}x{input_img.shape[1]}")
 
-    out_img = scale(input_img, 2.2)
-    out_img = rotation(out_img, 90.0)
+    out_img = apply_scale(input_img, scale)
+    out_img = apply_rotation(out_img, angle)
 
     print(f"Output image:")
     print(f"    Path: {out_img_path_str}")
@@ -116,6 +116,18 @@ def argparser() -> argparse.ArgumentParser:
         required=False,
     )
 
+    parser.add_argument(
+        '-s', '--scale',
+        help="Scale value",
+        required=False,
+    )
+
+    parser.add_argument(
+        '-a', '--angle',
+        help="Angle of rotation in degrees",
+        required=False,
+    )
+
     return parser
 
 def parse_arguments() -> tuple[str, str]:
@@ -123,6 +135,8 @@ def parse_arguments() -> tuple[str, str]:
     args = parser.parse_args()
     img_path_str = args.input
     out_img_path_str = args.output
+    scale = args.scale
+    angle = args.angle
 
     # Check input image path
     img_path = Path(img_path_str)
@@ -134,12 +148,24 @@ def parse_arguments() -> tuple[str, str]:
     # If none is given, write to the same folder as this script
     if out_img_path_str is None:
         out_img_path_str = str(Path(__file__).with_name(f"transformed_{img_path.stem}.png"))
-
     if Path(out_img_path_str).suffix != ".png":
         print("Error: output image must be .png")
         sys.exit(1)
 
-    return img_path_str, out_img_path_str
+    if scale == None and angle == None:
+        print("Error: no transformation was provided")
+        sys.exit(1)
+
+    if scale != None:
+        scale = float(scale)
+        if scale < 0.0:
+            print("Error: scaling factor must be positive")
+            sys.exit(1)
+
+    if angle != None:
+        angle = float(angle)
+
+    return img_path_str, out_img_path_str, scale, angle
 
 
 if __name__ == "__main__":
