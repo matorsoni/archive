@@ -10,23 +10,26 @@ import numpy as np
 def apply_scale(img, scale):
     assert scale > 0.0
 
-    new_height = int(scale * img.shape[0])
-    new_width  = int(scale * img.shape[1])
+    # Computing width and height of scaled image.
+    h = img.shape[0]
+    w = img.shape[1]
+    H = int(scale * h)
+    W = int(scale * w)
     if len(img.shape) == 2:
-        new_shape = (new_height, new_width)
+        new_shape = (H, W)
     elif len(img.shape) == 3:
-        new_shape = (new_height, new_width, img.shape[2])
+        new_shape = (H, W, img.shape[2])
     else:
         print(f"Unsupported image shape: {img.shape}")
         return None
 
     new_img = np.zeros(new_shape)
-    for i in range(new_img.shape[0]):
-        for j in range(new_img.shape[1]):
+    for i in range(H):
+        for j in range(W):
             i_orig = int(i / scale)
             j_orig = int(j / scale)
-            #assert i_orig < img.shape[0]
-            #assert j_orig < img.shape[1]
+            assert i_orig < img.shape[0]
+            assert j_orig < img.shape[1]
 
             new_img[i, j] = img[i_orig, j_orig]
 
@@ -35,42 +38,37 @@ def apply_scale(img, scale):
 def apply_rotation(img, angle_deg):
     angle = np.deg2rad(angle_deg)
 
-    # computing BB for new image
-    a = img.shape[0]
-    b = img.shape[1]
-    # TODO: CORRIGIR O SINAL DO ANGULO, PRA OBTER UM GIRO CORRETO EM TODO O 360
+    # Computing width and height of rotated image.
+    h = img.shape[0]
+    w = img.shape[1]
     c = np.abs(np.cos(angle))
     s = np.abs(np.sin(angle))
-    #c = np.cos(angle)
-    #s = np.sin(angle)
+    H = int(h*c + w*s)
+    W  = int(h*s + w*c)
 
-    new_height = int(a*c + b*s)
-    new_width  = int(a*s + b*c)
     if len(img.shape) == 2:
-        new_shape = (new_height, new_width)
+        new_shape = (H, W)
     elif len(img.shape) == 3:
-        new_shape = (new_height, new_width, img.shape[2])
+        new_shape = (H, W, img.shape[2])
     else:
         print(f"Unsupported image shape: {img.shape}")
         return None
-    new_img = np.zeros(new_shape)
 
-    R = new_img.shape[0]
-    C = new_img.shape[1]
-    for I in range(R):
-        for J in range(C):
-            X = J/C - 0.5
-            Y = -I/R + 0.5
-            # Apply rotation of -angle to retrieve x,y in original image space
+    new_img = np.zeros(new_shape)
+    for I in range(H):
+        for J in range(W):
+            # Compute pixel coordinates in [-0.5, 0.5]x[-0.5, 0.5] image space.
+            X = J/W - 0.5
+            Y = -I/H + 0.5
+
+            # Apply rotation of -angle to retrieve x,y in original image space.
+            # Then compute pixel indices in original image space.
             x = c * X + s * Y
             y = -s * X + c * Y
-            #i = int((0.5 - y)*R)  <-- centro errado
-            #j = int((0.5 + x)*C)  <-- escala certa
-            #i = int((0.5 - y)*a)  <-- centro correto
-            #j = int((0.5 + x)*b)  <-- escala errada
-            i = int(0.5*a - y*R) # YES
-            j = int(0.5*b + x*C) # YES
-            if i >= 0 and i < a and j >= 0 and j < b:
+            i = int(0.5*h - y*H)
+            j = int(0.5*w + x*W)
+
+            if i >= 0 and i < h and j >= 0 and j < w:
                 new_img[I,J] = img[i,j]
 
     return new_img
@@ -88,8 +86,11 @@ def main():
     print(f"    Path: {img_path_str}")
     print(f"    Dimensions: {input_img.shape[0]}x{input_img.shape[1]}")
 
-    out_img = apply_scale(input_img, scale)
-    out_img = apply_rotation(out_img, angle)
+    out_img = input_img
+    if scale != None:
+        out_img = apply_scale(out_img, scale)
+    if angle != None:
+        out_img = apply_rotation(out_img, angle)
 
     print(f"Output image:")
     print(f"    Path: {out_img_path_str}")
