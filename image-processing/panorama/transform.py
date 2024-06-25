@@ -5,25 +5,64 @@ import sys
 import cv2
 import numpy as np
 
+# Access image clamping the edge values for out of bounds access.
+def pixel(img, i, j):
+    i = np.clip(i, 0, img.shape[0]-1)
+    j = np.clip(j, 0, img.shape[1]-1)
+    return img[i, j]
+
 # Sampling modes.
 def sample_nearest(img, i: float, j: float):
-    return img[int(np.floor(i+0.5)), int(np.floor(j+0.5))]
+    return pixel(img, int(np.floor(i+0.5)), int(np.floor(j+0.5)))
 
 def sample_bilinear(img, i: float, j: float):
     di = i - np.floor(i)
     dj = j - np.floor(j)
     i = int(i)
     j = int(j)
-    ni = np.clip(i+1, 0, img.shape[0]-1)
-    nj = np.clip(j+1, 0, img.shape[1]-1)
-    sample  = (1.0-di) * (1.0-dj) * img[i, j]
-    sample += di * (1.0-dj) * img[ni, j]
-    sample += (1.0-di) * dj * img[i, nj]
-    sample += di * dj * img[ni, nj]
+    sample  = (1.0-di) * (1.0-dj) * pixel(img, i, j)
+    sample += di * (1.0-dj) * pixel(img, i+1, j)
+    sample += (1.0-di) * dj * pixel(img, i, j+1)
+    sample += di * dj * pixel(img, i+1, j+1)
     return sample
 
-def sample_bicubic(): pass
-def sample_lagrange(): pass
+def sample_bicubic(img, i: float, j: float):
+    def P(t):
+        return max(0.0, t)
+
+    def R(s):
+        return 1.0/6.0 * (P(s+2)**3 - 4*P(s+1)**3 + 6*P(s)**3 - 4*P(s-1)**3)
+
+    di = i - np.floor(i)
+    dj = j - np.floor(j)
+    i = int(i)
+    j = int(j)
+    sample = 0
+    for m in [-1, 0, 1, 2]:
+        for n in [-1, 0, 1, 2]:
+            sample += pixel(img, i+m, j+n) * R(m-di) * R(dj-n)
+
+    return sample
+
+def sample_lagrange(img, i: float, j: float):
+    pass
+    di = i - np.floor(i)
+    dj = j - np.floor(j)
+    i = int(i)
+    j = int(j)
+
+    def L(n: int):
+        val  = -1.0/6.0 * di*(di-1.0)*(di-2.0)*pixel(img, i-1, j+n-2)
+        val += 1.0/2.0 * (di+1.0)*(di-1.0)*(di-2.0)*pixel(img, i, j+n-2)
+        val += -1.0/2.0 * di*(di+1.0)*(di-2.0)*pixel(img, i+1, j+n-2)
+        val += 1.0/6.0 * di*(di+1.0)*(di-1.0)*pixel(img, i+2, j+n-2)
+        return val
+
+    sample  = -1.0/6.0 * dj*(dj-1.0)*(dj-2.0)*L(1)
+    sample +=  1.0/2.0 * (dj+1.0)*(dj-1.0)*(dj-2.0)*L(2)
+    sample += -1.0/2.0 * dj*(dj+1.0)*(dj-2.0)*L(3)
+    sample +=  1.0/6.0 * dj*(dj+1.0)*(dj-1.0)*L(4)
+    return sample
 
 def sampling_mode(mode: str):
     if mode == "nearest":
