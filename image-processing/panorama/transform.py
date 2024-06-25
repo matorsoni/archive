@@ -5,9 +5,39 @@ import sys
 import cv2
 import numpy as np
 
+# Sampling modes.
+def sample_nearest(img, i: float, j: float):
+    return img[int(np.floor(i+0.5)), int(np.floor(j+0.5))]
 
-# Scale transform
-def apply_scale(img, scale):
+def sample_bilinear(img, i: float, j: float):
+    di = i - np.floor(i)
+    dj = j - np.floor(j)
+    i = int(i)
+    j = int(j)
+    ni = np.clip(i+1, 0, img.shape[0]-1)
+    nj = np.clip(j+1, 0, img.shape[1]-1)
+    sample  = (1.0-di) * (1.0-dj) * img[i, j]
+    sample += di * (1.0-dj) * img[ni, j]
+    sample += (1.0-di) * dj * img[i, nj]
+    sample += di * dj * img[ni, nj]
+    return sample
+
+def sample_bicubic(): pass
+def sample_lagrange(): pass
+
+def sampling_mode(mode: str):
+    if mode == "nearest":
+        return sample_nearest
+    elif mode == "bilinear":
+        return sample_bilinear
+    elif mode == "bicubic":
+        return sample_bicubic
+    elif mode == "lagrange":
+        return sample_lagrange
+    assert False, "Invalid mode should not get here!!"
+
+# Scale transform.
+def apply_scale(img, scale, mode):
     assert scale > 0.0
 
     # Computing width and height of scaled image.
@@ -24,18 +54,20 @@ def apply_scale(img, scale):
         return None
 
     new_img = np.zeros(new_shape)
-    for i in range(H):
-        for j in range(W):
-            i_orig = int(i / scale)
-            j_orig = int(j / scale)
-            assert i_orig < img.shape[0]
-            assert j_orig < img.shape[1]
+    sample = sampling_mode(mode)
+    for I in range(H):
+        for J in range(W):
+            i = int(I / scale)
+            j = int(J / scale)
+            assert i < img.shape[0]
+            assert j < img.shape[1]
 
-            new_img[i, j] = img[i_orig, j_orig]
+            new_img[I, J] = sample(img, i, j)
 
     return new_img
 
-def apply_rotation(img, angle_deg):
+# Rotation transform.
+def apply_rotation(img, angle_deg, mode):
     angle = np.deg2rad(angle_deg)
 
     # Computing width and height of rotated image.
@@ -55,6 +87,7 @@ def apply_rotation(img, angle_deg):
         return None
 
     new_img = np.zeros(new_shape)
+    sample = sampling_mode(mode)
     for I in range(H):
         for J in range(W):
             # Compute pixel coordinates in [-0.5, 0.5]x[-0.5, 0.5] image space.
@@ -69,13 +102,13 @@ def apply_rotation(img, angle_deg):
             j = int(0.5*w + x*W)
 
             if i >= 0 and i < h and j >= 0 and j < w:
-                new_img[I,J] = img[i,j]
+                new_img[I, J] = sample(img, i, j)
 
     return new_img
 
 
 def main():
-    img_path_str, out_img_path_str, scale, angle = parse_arguments()
+    img_path_str, out_img_path_str, scale, angle, mode = parse_arguments()
 
     # Read image
     input_img = cv2.imread(img_path_str)
@@ -85,12 +118,15 @@ def main():
     print(f"Input image:")
     print(f"    Path: {img_path_str}")
     print(f"    Dimensions: {input_img.shape[0]}x{input_img.shape[1]}")
+    print(f"    Scale factor: {scale}")
+    print(f"    Rotation angle: {angle}")
+    print(f"    Interpolation mode: {mode}")
 
     out_img = input_img
     if scale != None:
-        out_img = apply_scale(out_img, scale)
+        out_img = apply_scale(out_img, scale, mode)
     if angle != None:
-        out_img = apply_rotation(out_img, angle)
+        out_img = apply_rotation(out_img, angle, mode)
 
     print(f"Output image:")
     print(f"    Path: {out_img_path_str}")
@@ -129,6 +165,12 @@ def argparser() -> argparse.ArgumentParser:
         required=False,
     )
 
+    parser.add_argument(
+        '-m', '--mode',
+        help="Interpolation mode, one of: nearest, bilinear, bicubic, lagrange",
+        required=False,
+    )
+
     return parser
 
 def parse_arguments() -> tuple[str, str]:
@@ -138,6 +180,7 @@ def parse_arguments() -> tuple[str, str]:
     out_img_path_str = args.output
     scale = args.scale
     angle = args.angle
+    mode = args.mode
 
     # Check input image path
     img_path = Path(img_path_str)
@@ -154,19 +197,29 @@ def parse_arguments() -> tuple[str, str]:
         sys.exit(1)
 
     if scale == None and angle == None:
-        print("Error: no transformation was provided")
+        print("Error: no transformation was provided.")
         sys.exit(1)
 
     if scale != None:
         scale = float(scale)
         if scale < 0.0:
-            print("Error: scaling factor must be positive")
+            print("Error: scaling factor must be positive.")
             sys.exit(1)
 
     if angle != None:
         angle = float(angle)
 
-    return img_path_str, out_img_path_str, scale, angle
+    valid_mode = \
+        mode == "nearest"  or  \
+        mode == "bilinear" or  \
+        mode == "bicubic"  or  \
+        mode == "lagrange"
+
+    if not valid_mode:
+        print(f"Error: invalid interpolation mode \"{mode}\", see help (-h).")
+        sys.exit(1)
+
+    return img_path_str, out_img_path_str, scale, angle, mode
 
 
 if __name__ == "__main__":
