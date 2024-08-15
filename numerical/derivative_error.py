@@ -31,7 +31,7 @@ def d2_4(f, x, h):
 
 # Create graphs and table of numerical errors related to
 # derivative approximations
-def run_study(f, df, x0: ftype, H: np.array = np.array([1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5], dtype=ftype)):
+def run_study(f, df, x0: ftype, H: np.array):
 
     D_true = df(x0)
     D_plus = d1_plus(f, x0, H)
@@ -50,7 +50,7 @@ def run_study(f, df, x0: ftype, H: np.array = np.array([1e-1, 5e-2, 1e-2, 5e-3, 
     print("\n")
     print(f"True value: {scifmt(D_true)}")
     print(make_table(value_table, headers=["h","D+ u(x0)", "D- u(x0)", "D0 u(x0)", "D3 u(x0)"]))
-    print(make_table(error_table, headers=["h","D+ u(x0)", "D- u(x0)", "D0 u(x0)", "D3 u(x0)"]))
+    print(make_table(error_table, headers=["h","E(D+ u)(x0)", "E(D- u)(x0)", "E(D0 u)(x0)", "E(D3 u)(x0)"]))
     print("\n")
 
     # Error values for log-log plot
@@ -61,7 +61,6 @@ def run_study(f, df, x0: ftype, H: np.array = np.array([1e-1, 5e-2, 1e-2, 5e-3, 
 
     # Generate plot
     import matplotlib.pyplot as plt
-    t = np.arange(0., 5., 0.2)
     plt.plot(H, D_plus_error, 'ro-')
     plt.plot(H, D_0_error, 'bs-')
     plt.plot(H, D_3_error, 'g^-')
@@ -73,36 +72,11 @@ def run_study(f, df, x0: ftype, H: np.array = np.array([1e-1, 5e-2, 1e-2, 5e-3, 
     plt.legend(["D+", "D0", "D3"], loc="lower right")
     plt.show()
 
-# Functions to study
-def u_sin(x: ftype) -> ftype:
-    return np.sin(x, dtype=ftype)
-def du_sin(x: ftype) -> ftype:
-    return np.cos(x, dtype=ftype)
 
-def u_sin10(x: ftype) -> ftype:
-    return np.sin(10.0*x, dtype=ftype)
-def du_sin10(x: ftype) -> ftype:
-    return 10.0*np.cos(10.0*x, dtype=ftype)
+def run_study_2(f, d2f, x0: ftype, H: np.array):
 
-def u_poly(x: ftype) -> ftype:
-    return 4*x**3 - 12*x**2 + 14*x - 4
-def du_poly(x: ftype) -> ftype:
-    return 12*x**2 - 24*x + 14
-
-def u_mod(x: ftype) -> ftype:
-    return np.power(np.abs(x-1.001), 3.0/2)
-def du_mod(x: ftype) -> ftype:
-    step = lambda x: ftype(1) if x >= 0.0 else ftype(-1)
-    return 3.0/2 * np.power(np.abs(x-1.001), 1.0/2) * step(x-1.001)
-
-run_study(u_sin, du_sin, ftype(1))
-run_study(u_sin10, du_sin10, ftype(1))
-run_study(u_poly, du_poly, ftype(1))
-run_study(u_mod, du_mod, ftype(1))
-
-def run_study_2(f, true_val, x0: ftype, H = np.logspace(-1, -4, 13, dtype=ftype)):
+    D_2_true = d2f(x0)
     D_2 = d2_4(f, x0, H)
-    D_2_true = true_val
 
     value_table = []
     error_table = []
@@ -115,7 +89,7 @@ def run_study_2(f, true_val, x0: ftype, H = np.logspace(-1, -4, 13, dtype=ftype)
     print("\n")
     print(f"True value: {scifmt(D_2_true)}")
     print(make_table(value_table, headers=["h","D2_4 u(x0)"]))
-    print(make_table(error_table, headers=["h","D2_4 u(x0)"]))
+    print(make_table(error_table, headers=["h","E(D2_4 u)(x0)"]))
     print("\n")
 
     # Error values for log-log plot
@@ -123,7 +97,6 @@ def run_study_2(f, true_val, x0: ftype, H = np.logspace(-1, -4, 13, dtype=ftype)
 
     # Generate plot
     import matplotlib.pyplot as plt
-    t = np.arange(0., 5., 0.2)
     plt.plot(H, D_2_error, 'ro-')
     plt.xlabel('h')
     plt.ylabel('Aproximation error')
@@ -133,6 +106,45 @@ def run_study_2(f, true_val, x0: ftype, H = np.logspace(-1, -4, 13, dtype=ftype)
     plt.legend(["D2_4"], loc="lower right")
     plt.show()
 
-f = lambda x: np.sin(2.0*x, dtype=ftype)
-d2f = -4.0 * f(1)
-run_study_2(f, d2f, ftype(1))
+
+def main():
+    H_array = np.array([1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5], dtype=ftype)
+    run_study(
+        f=lambda x: np.sin(x, dtype=ftype),
+        df=lambda x: np.cos(x, dtype=ftype),
+        x0=ftype(1),
+        H=H_array
+    )
+
+    H_array = np.logspace(-1, -8, 30, dtype=ftype)
+    run_study(
+        f=lambda x: np.sin(10.0*x, dtype=ftype),
+        df=lambda x: 10.0*np.cos(10.0*x, dtype=ftype),
+        x0=ftype(1),
+        H=H_array
+    )
+
+    run_study(
+        f=lambda x: 4*x**3 - 12*x**2 + 14*x - 4,
+        df=lambda x: 12*x**2 - 24*x + 14,
+        x0=ftype(1),
+        H=H_array
+    )
+
+    run_study(
+        f=lambda x: np.power(np.abs(x-1.001), 3.0/2),
+        df=lambda x: 1.5 * np.sqrt(np.abs(x-1.001)) * np.sign(x-1.001),
+        x0=ftype(1),
+        H=H_array
+    )
+
+    H_array = np.logspace(-1, -4, 13, dtype=ftype)
+    run_study_2(
+        f=lambda x: np.sin(2.0*x, dtype=ftype),
+        d2f=lambda x: -4.0*np.sin(2.0*x, dtype=ftype),
+        x0=ftype(1),
+        H=H_array
+    )
+
+if __name__ == "__main__":
+    main()
