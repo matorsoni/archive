@@ -92,11 +92,13 @@ def du_poly(x: ftype) -> ftype:
 def u_mod(x: ftype) -> ftype:
     return np.power(np.abs(x-1.001), 3.0/2)
 def du_mod(x: ftype) -> ftype:
-    return 1# ..... compute 3.0/2 * np.power(np.abs(x-1.001), 3.0/2)
+    step = lambda x: ftype(1) if x >= 0.0 else ftype(-1)
+    return 3.0/2 * np.power(np.abs(x-1.001), 1.0/2) * step(x-1.001)
 
 run_study(u_sin, du_sin, ftype(1))
 run_study(u_sin10, du_sin10, ftype(1))
 run_study(u_poly, du_poly, ftype(1))
+run_study(u_mod, du_mod, ftype(1))
 
 def run_study_2(f, true_val, x0: ftype, H = np.logspace(-1, -4, 13, dtype=ftype)):
     D_2 = d2_4(f, x0, H)
