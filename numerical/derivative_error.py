@@ -10,16 +10,34 @@ def make_table(table: list[list], headers: list):
     # Disable numerical parse to allow showing data in scientific notation.
     return tabulate(table, headers, tablefmt="grid", disable_numparse=True)
 
-def run_study(f, df, x0: ftype):
-    # Approximating derivative of f around x0
-    D_true = df(x0)
-    H = np.array([1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5], dtype=ftype)
+# Numerical approximations of first order (d1) and second order (d2) derivatives.
+def d1_plus(f, x, h):
+    return (f(x+h) - f(x))/h
 
-    # Aproximation values
-    D_plus = (f(x0+H) - f(x0))/H
-    D_minus = (f(x0) - f(x0-H))/H
-    D_0 = (f(x0+H) - f(x0-H))/(2*H)
-    D_3 = (2*f(x0+H) + 3*f(x0) - 6*f(x0-H) + f(x0-2*H))/(6*H)
+def d1_minus(f, x, h):
+    return (f(x) - f(x-h))/h
+
+def d1_0(f, x, h):
+    return (f(x+h) - f(x-h))/(2*h)
+
+def d1_3(f, x, h):
+    return (2*f(x+h) + 3*f(x) - 6*f(x-h) + f(x-2*h))/(6*h)
+
+def d2_4(f, x, h):
+    a = -1.0/12
+    b =  4.0/3
+    c = -5.0/2
+    return (a*f(x+2*h) + b*f(x+h) + c*f(x) + b*f(x-h) + a*f(x-2*h))/(h*h)
+
+# Create graphs and table of numerical errors related to
+# derivative approximations
+def run_study(f, df, x0: ftype, H: np.array = np.array([1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5], dtype=ftype)):
+
+    D_true = df(x0)
+    D_plus = d1_plus(f, x0, H)
+    D_minus = d1_minus(f, x0, H)
+    D_0 = d1_0(f, x0, H)
+    D_3 = d1_3(f, x0, H)
 
     value_table = []
     error_table = []
@@ -79,3 +97,40 @@ def du_mod(x: ftype) -> ftype:
 run_study(u_sin, du_sin, ftype(1))
 run_study(u_sin10, du_sin10, ftype(1))
 run_study(u_poly, du_poly, ftype(1))
+
+def run_study_2(f, true_val, x0: ftype, H = np.logspace(-1, -4, 13, dtype=ftype)):
+    D_2 = d2_4(f, x0, H)
+    D_2_true = true_val
+
+    value_table = []
+    error_table = []
+    for i,h in enumerate(H):
+        value_row = [scifmt(h), scifmt(D_2[i])]
+        value_table.append(value_row)
+        error_row = [scifmt(h), scifmt(D_2[i] - D_2_true)]
+        error_table.append(error_row)
+
+    print("\n")
+    print(f"True value: {scifmt(D_2_true)}")
+    print(make_table(value_table, headers=["h","D2_4 u(x0)"]))
+    print(make_table(error_table, headers=["h","D2_4 u(x0)"]))
+    print("\n")
+
+    # Error values for log-log plot
+    D_2_error = np.abs(D_2 - D_2_true)
+
+    # Generate plot
+    import matplotlib.pyplot as plt
+    t = np.arange(0., 5., 0.2)
+    plt.plot(H, D_2_error, 'ro-')
+    plt.xlabel('h')
+    plt.ylabel('Aproximation error')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.grid(False)
+    plt.legend(["D2_4"], loc="lower right")
+    plt.show()
+
+f = lambda x: np.sin(2.0*x, dtype=ftype)
+d2f = -4.0 * f(1)
+run_study_2(f, d2f, ftype(1))
