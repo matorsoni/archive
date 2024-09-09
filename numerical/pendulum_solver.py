@@ -37,13 +37,13 @@ def G(u):
     return A@u + np.reshape(np.sin(u), newshape=(m,1)) + F
 
 def J(u):
-    return A + np.diagflat(h2*np.cos(u))
+    return A + np.diagflat(np.cos(u))
 
 t = h*(1.+np.array(range(m), dtype=np.float64))
 u0 = np.reshape(0.7*np.cos(t) + 0.5*np.sin(t), newshape=(m,1))
 u = u0
 U = []
-iters = 10
+iters = 7
 for i in range(iters):
     delta = np.linalg.solve(J(u), -G(u))
     print(f"Max norm of delta: {max(abs(delta))}")
