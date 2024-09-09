@@ -39,23 +39,26 @@ def G(u):
 def J(u):
     return A + np.diagflat(np.cos(u))
 
+# Initial guesses that lead to different numerical solutions
 t = h*(1.+np.array(range(m), dtype=np.float64))
-u0 = np.reshape(0.7*np.cos(t) + 0.5*np.sin(t), newshape=(m,1))
-u = u0
+#u = np.reshape(0.7*np.cos(t) + 0.5*np.sin(t), newshape=(m,1))
+u = np.reshape(0.7 + np.sin(t/2), newshape=(m,1))
 U = []
-iters = 7
+iters = 8
 for i in range(iters):
     delta = np.linalg.solve(J(u), -G(u))
-    print(f"Max norm of delta: {max(abs(delta))}")
+    print(f"Max norm of delta: {max(abs(delta))[0]:.4E}")
     u = u + delta
     U.append(u)
 
 # Generate plot
 import matplotlib.pyplot as plt
+plt.xlabel('Time (t)')
+plt.ylabel('Numerical solution U')
+plt.grid(False)
 for i in range(iters):
-    plt.xlabel('Time (t)')
-    plt.ylabel('Numerical solution U')
-    plt.ylim(-1,1)
-    plt.grid(False)
-    plt.plot(t, U[i], 'ro-')
-    plt.show()
+    green_hex = hex(int((255 * i) / iters))[2:] # remove 2 chars "0x"
+    if len(green_hex) == 1:
+        green_hex = "0"+green_hex
+    plt.plot(t, U[i],  linewidth=2, color=f'#00{green_hex}00')
+plt.show()
