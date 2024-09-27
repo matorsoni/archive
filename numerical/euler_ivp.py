@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 flt = np.float64
 
@@ -14,33 +15,43 @@ def g(x):
 def f(x):
     return (1 - x)*(2 - x)/(1 + x)
 
-# Forward Euler solver for N points including initial 0.0
 def forward_euler(xf, N):
     h = xf / (N-1)
     X = np.linspace(0.0, xf, N, dtype=flt)
     Y = np.zeros(shape=(N,), dtype=flt)
     Y[0] = 2.0
-    Y_true = f(X)
-    for i in range(1, N):
-        x = X[i]
+    for i in tqdm(range(1, N)):
+        x = X[i-1]
         y_ = Y[i-1]
         Y[i] = y_ + h * (y_*y_ - g(x))
 
     # Error values for log-log plot
-    E = np.abs(Y - Y_true)
+    #E = np.abs(Y - Y_true)
+    return X, Y
 
-    # Generate plot
-    import matplotlib.pyplot as plt
-    plt.plot(X, Y, 'ro-')
-    plt.plot(X, Y_true, 'bs-')
-    #plt.plot(X, D_3_error, 'g^-')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.grid(False)
-    plt.legend(["Numerical", "Analytical"], loc="lower right")
-    plt.show()
+def backward_euler(xf, N):
+    h = xf / (N-1)
+    X = np.linspace(0.0, xf, N, dtype=flt)
+    Y = np.zeros(shape=(N,), dtype=flt)
+    Y[0] = 2.0
+    for i in tqdm(range(1, N)):
+        x = X[i-1]
+        y_ = Y[i-1]
+        Y[i] = y_ + h * (y_*y_ - g(x))
+    return X, Y
 
-dx = 0.1
+dx = 0.0001
 xf = 1.6
 N = int(xf / dx)
-forward_euler(xf, N)
+X, Y = forward_euler(xf, N)
+Y_true = f(X)
+
+# Generate plot
+import matplotlib.pyplot as plt
+plt.plot(X, Y, 'r-')
+plt.plot(X, Y_true, 'b-')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.grid(True)
+plt.legend(["Numerical", "Analytical"], loc="upper right")
+plt.show()
