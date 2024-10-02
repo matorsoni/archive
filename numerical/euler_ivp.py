@@ -3,108 +3,108 @@ from tqdm import tqdm
 
 flt = np.float64
 
-def g(x):
-    x2 = x*x
-    x3 = x*x2
-    x4 = x*x3
-    return (x4 - 6*x3 + 12*x2 - 14*x + 9)/(1 + 2*x + x2)
+def g(t):
+    t2 = t*t
+    t3 = t*t2
+    t4 = t*t3
+    return (t4 - 6*t3 + 12*t2 - 14*t + 9)/(1 + 2*t + t2)
 
 # Initial value problem:
-# y' = f(y,x) = y^2 - g(x) ; y(0) = 2
-def f(y, x):
-    return y*y - g(x)
+# y' = f(t, y) = y^2 - g(t) ; y(0) = 2
+def f(t, y):
+    return y*y - g(t)
 
 # Analytical solution
-def ytrue(x):
-    return (1 - x)*(2 - x)/(1 + x)
+def ytrue(t):
+    return (1 - t)*(2 - t)/(1 + t)
 
-def forward_euler(xi, xf, N):
-    h = (xf - xi) / (N-1)
-    X = np.linspace(xi, xf, N, dtype=flt)
+def forward_euler(ti, tf, N):
+    h = (tf - ti) / (N-1)
+    T = np.linspace(ti, tf, N, dtype=flt)
     Y = np.zeros(shape=(N,), dtype=flt)
     Y[0] = 2.0
     for i in tqdm(range(1, N)):
-        x_ = X[i-1]
+        t_ = T[i-1]
         y_ = Y[i-1]
-        Y[i] = y_ + h * f(y_, x_)
-    return X, Y
+        Y[i] = y_ + h * f(t_, y_)
+    return T, Y
 
-def backward_euler(xi, xf, N):
+def backward_euler(ti, tf, N):
 
-    def zero_by_newton(y_init, y_prev, x, h):
-        def G(y, y_, x, h): return y - h*f(y,x) - y_
-        def dG(y, y_, x, h): return 1 - h*2*y
+    def zero_by_newton(y_init, y_prev, t, h):
+        def G(y, y_, t, h): return y - h*f(t, y) - y_
+        def dG(y, y_, t, h): return 1 - h*2*y
         tol = 1e-4
         max_iter = 100
         y = y_init
         for _ in range(max_iter):
-            update = G(y, y_prev, x, h)/dG(y, y_prev, x, h)
+            update = G(y, y_prev, t, h)/dG(y, y_prev, t, h)
             y = y - update
             if np.abs(update) < tol:
                 break
         return y
 
-    h = (xf - xi) / (N-1)
-    X = np.linspace(xi, xf, N, dtype=flt)
+    h = (tf - ti) / (N-1)
+    T = np.linspace(ti, tf, N, dtype=flt)
     Y = np.zeros(shape=(N,), dtype=flt)
     Y[0] = 2.0
     for i in tqdm(range(1, N)):
-        x_ = X[i]
+        t_ = T[i]
         y_ = Y[i-1]
-        Y[i] = zero_by_newton(y_, y_, x_, h)
-    return X, Y
+        Y[i] = zero_by_newton(y_, y_, t_, h)
+    return T, Y
 
-def runge_kutta_4(xi, xf, N):
-    h = (xf - xi) / (N-1)
+def runge_kutta_4(ti, tf, N):
+    h = (tf - ti) / (N-1)
     half_h = 0.5 * h
-    X = np.linspace(xi, xf, N, dtype=flt)
+    T = np.linspace(ti, tf, N, dtype=flt)
     Y = np.zeros(shape=(N,), dtype=flt)
     Y[0] = 2.0
     for i in tqdm(range(1, N)):
-        x_ = X[i-1]
+        t_ = T[i-1]
         y_ = Y[i-1]
         y1 = y_
-        y2 = y_ + half_h*f(y1, x_)
-        y3 = y_ + half_h*f(y2, x_ + half_h)
-        y4 = y_ + h*f(y3, x_ + half_h)
-        k1 = f(y1, x_)
-        k2 = f(y2, x_ + half_h)
-        k3 = f(y3, x_ + half_h)
-        k4 = f(y4, x_ + h)
+        y2 = y_ + half_h*f(t_, y1)
+        y3 = y_ + half_h*f(t_ + half_h, y2)
+        y4 = y_ + h*f(t_ + half_h, y3)
+        k1 = f(t_, y1)
+        k2 = f(t_ + half_h, y2)
+        k3 = f(t_ + half_h, y3)
+        k4 = f(t_ + h, y4)
         Y[i] = y_ + (k1 + 2*k2 + 2*k3 + k4) * h / 6
-    return X, Y
+    return T, Y
 
-def generate_plot(X, Y, Y_true, title):
+def generate_plot(T, Y, Y_true, title):
     import matplotlib.pyplot as plt
     pad = 0.1
-    minx = min(X) - pad
-    maxx = max(X) + pad
+    mint = min(T) - pad
+    maxt = max(T) + pad
     miny = min(Y_true) - pad
     maxy = max(Y_true) + pad
-    plt.plot(X, Y, 'r-')
-    plt.plot(X, Y_true, 'b-')
-    plt.xlabel('X')
+    plt.plot(T, Y, 'r-')
+    plt.plot(T, Y_true, 'b-')
+    plt.xlabel('T')
     plt.ylabel('Y')
     plt.title(title)
-    plt.xlim(minx, maxx)
+    plt.xlim(mint, maxt)
     plt.ylim(miny, maxy)
     plt.grid(True)
     plt.legend(["Numerical", "Analytical"], loc="upper right")
     plt.show()
 
 h = 0.01
-xi = 0.0
-xf = 4.6
-N = int((xf-xi) / h)
+ti = 0.0
+tf = 4.6
+N = int((tf-ti) / h)
 
-X, Y = forward_euler(xi, xf, N)
-Y_true = ytrue(X)
-generate_plot(X, Y, Y_true, "Forward Euler (explicit)")
+T, Y = forward_euler(ti, tf, N)
+Y_true = ytrue(T)
+generate_plot(T, Y, Y_true, "Forward Euler (explicit)")
 
-X, Y = backward_euler(xi, xf, N)
-Y_true = ytrue(X)
-generate_plot(X, Y, Y_true, "Forward Euler (implicit)")
+T, Y = backward_euler(ti, tf, N)
+Y_true = ytrue(T)
+generate_plot(T, Y, Y_true, "Forward Euler (implicit)")
 
-X, Y = runge_kutta_4(xi, xf, N)
-Y_true = ytrue(X)
-generate_plot(X, Y, Y_true, "Runge-Kutta 4")
+T, Y = runge_kutta_4(ti, tf, N)
+Y_true = ytrue(T)
+generate_plot(T, Y, Y_true, "Runge-Kutta 4")
