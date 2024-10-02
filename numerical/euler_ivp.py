@@ -56,20 +56,25 @@ def backward_euler(xi, xf, N):
 
 def runge_kutta_4(xi, xf, N):
     h = (xf - xi) / (N-1)
+    half_h = 0.5 * h
     X = np.linspace(xi, xf, N, dtype=flt)
     Y = np.zeros(shape=(N,), dtype=flt)
     Y[0] = 2.0
     for i in tqdm(range(1, N)):
         x_ = X[i-1]
         y_ = Y[i-1]
-        k1 = h * f(y_, x_)
-        k2 = h * f(y_ + 0.5 * k1, x_ + 0.5 * h)
-        k3 = h * f(y_ + 0.5 * k2, x_ + 0.5 * h)
-        k4 = h * f(y_ + k3, x_ + h)
-        Y[i] = y_ + (k1 + 2*k2 + 2*k3 + k4) / 6
+        y1 = y_
+        y2 = y_ + half_h*f(y1, x_)
+        y3 = y_ + half_h*f(y2, x_ + half_h)
+        y4 = y_ + h*f(y3, x_ + half_h)
+        k1 = f(y1, x_)
+        k2 = f(y2, x_ + half_h)
+        k3 = f(y3, x_ + half_h)
+        k4 = f(y4, x_ + h)
+        Y[i] = y_ + (k1 + 2*k2 + 2*k3 + k4) * h / 6
     return X, Y
 
-def generate_plot(X, Y, Y_true):
+def generate_plot(X, Y, Y_true, title):
     import matplotlib.pyplot as plt
     pad = 0.1
     minx = min(X) - pad
@@ -80,6 +85,7 @@ def generate_plot(X, Y, Y_true):
     plt.plot(X, Y_true, 'b-')
     plt.xlabel('X')
     plt.ylabel('Y')
+    plt.title(title)
     plt.xlim(minx, maxx)
     plt.ylim(miny, maxy)
     plt.grid(True)
@@ -93,12 +99,12 @@ N = int((xf-xi) / h)
 
 X, Y = forward_euler(xi, xf, N)
 Y_true = ytrue(X)
-generate_plot(X, Y, Y_true)
+generate_plot(X, Y, Y_true, "Forward Euler (explicit)")
 
 X, Y = backward_euler(xi, xf, N)
 Y_true = ytrue(X)
-generate_plot(X, Y, Y_true)
+generate_plot(X, Y, Y_true, "Forward Euler (implicit)")
 
 X, Y = runge_kutta_4(xi, xf, N)
 Y_true = ytrue(X)
-generate_plot(X, Y, Y_true)
+generate_plot(X, Y, Y_true, "Runge-Kutta 4")
