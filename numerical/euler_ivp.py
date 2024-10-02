@@ -24,54 +24,81 @@ def forward_euler(xi, xf, N):
     Y = np.zeros(shape=(N,), dtype=flt)
     Y[0] = 2.0
     for i in tqdm(range(1, N)):
-        x = X[i-1]
+        x_ = X[i-1]
         y_ = Y[i-1]
-        Y[i] = y_ + h * f(y_, x)
-
-    # Error values for log-log plot
-    #E = np.abs(Y - Y_true)
+        Y[i] = y_ + h * f(y_, x_)
     return X, Y
 
 def backward_euler(xi, xf, N):
-    def zero_by_newton(y, y_, x, h):
+
+    def zero_by_newton(y_init, y_prev, x, h):
         def G(y, y_, x, h): return y - h*f(y,x) - y_
         def dG(y, y_, x, h): return 1 - h*2*y
-        yi = y
-        while np.abs(G(yi, y_, x, h)/dG(yi, y_, x, h)) >= 0.0001:
-            yi = yi - G(yi, y_, x, h)/dG(yi, y_, x, h)
-        return yi
+        tol = 1e-4
+        max_iter = 100
+        y = y_init
+        for _ in range(max_iter):
+            update = G(y, y_prev, x, h)/dG(y, y_prev, x, h)
+            y = y - update
+            if np.abs(update) < tol:
+                break
+        return y
+
     h = (xf - xi) / (N-1)
     X = np.linspace(xi, xf, N, dtype=flt)
     Y = np.zeros(shape=(N,), dtype=flt)
     Y[0] = 2.0
     for i in tqdm(range(1, N)):
-        x = X[i]
+        x_ = X[i]
         y_ = Y[i-1]
-        Y[i] = zero_by_newton(y_, y_, x, h)
+        Y[i] = zero_by_newton(y_, y_, x_, h)
     return X, Y
 
-dx = 0.01
+def runge_kutta_4(xi, xf, N):
+    h = (xf - xi) / (N-1)
+    X = np.linspace(xi, xf, N, dtype=flt)
+    Y = np.zeros(shape=(N,), dtype=flt)
+    Y[0] = 2.0
+    for i in tqdm(range(1, N)):
+        x_ = X[i-1]
+        y_ = Y[i-1]
+        k1 = h * f(y_, x_)
+        k2 = h * f(y_ + 0.5 * k1, x_ + 0.5 * h)
+        k3 = h * f(y_ + 0.5 * k2, x_ + 0.5 * h)
+        k4 = h * f(y_ + k3, x_ + h)
+        Y[i] = y_ + (k1 + 2*k2 + 2*k3 + k4) / 6
+    return X, Y
+
+def generate_plot(X, Y, Y_true):
+    import matplotlib.pyplot as plt
+    pad = 0.1
+    minx = min(X) - pad
+    maxx = max(X) + pad
+    miny = min(Y_true) - pad
+    maxy = max(Y_true) + pad
+    plt.plot(X, Y, 'r-')
+    plt.plot(X, Y_true, 'b-')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.xlim(minx, maxx)
+    plt.ylim(miny, maxy)
+    plt.grid(True)
+    plt.legend(["Numerical", "Analytical"], loc="upper right")
+    plt.show()
+
+h = 0.01
 xi = 0.0
-xf = 1.6
-N = int(xf / dx)
+xf = 4.6
+N = int((xf-xi) / h)
+
 X, Y = forward_euler(xi, xf, N)
 Y_true = ytrue(X)
-#print(X)
-print(Y)
-#print(Y_true)
+generate_plot(X, Y, Y_true)
 
 X, Y = backward_euler(xi, xf, N)
 Y_true = ytrue(X)
-#print(X)
-print(Y)
-#print(Y_true)
+generate_plot(X, Y, Y_true)
 
-# Generate plot
-#import matplotlib.pyplot as plt
-#plt.plot(X, Y, 'r-')
-#plt.plot(X, Y_true, 'b-')
-#plt.xlabel('X')
-#plt.ylabel('Y')
-#plt.grid(True)
-#plt.legend(["Numerical", "Analytical"], loc="upper right")
-#plt.show()
+X, Y = runge_kutta_4(xi, xf, N)
+Y_true = ytrue(X)
+generate_plot(X, Y, Y_true)
