@@ -34,8 +34,8 @@ def backward_euler(ti, tf, N):
     def zero_by_newton(y_init, y_prev, t, h):
         def G(y, y_, t, h): return y - h*f(t, y) - y_
         def dG(y, y_, t, h): return 1 - h*2*y
-        tol = 1e-4
-        max_iter = 100
+        tol = 1e-6
+        max_iter = 200
         y = y_init
         for _ in range(max_iter):
             update = G(y, y_prev, t, h)/dG(y, y_prev, t, h)
@@ -74,6 +74,18 @@ def runge_kutta_4(ti, tf, N):
         Y[i] = y_ + (k1 + 2*k2 + 2*k3 + k4) * h / 6
     return T, Y
 
+def adams_moulton_4(ti, tf, N):
+    h = (tf - ti) / (N-1)
+    T = np.linspace(ti, tf, N, dtype=flt)
+    Y = np.zeros(shape=(N,), dtype=flt)
+    Y[0] = 2.0
+    Y[1] = Y[0] + f(T[0], Y[0])*h
+    Y[2] = Y[1] + (-f(T[0], Y[0]) + 3*f(T[1], Y[1]))*h/2
+    Y[3] = Y[2] + (5*f(T[0], Y[0]) - 16*f(T[1], Y[1]) + 23*f(T[2], Y[2]))*h/12
+    for i in tqdm(range(4, N)):
+        Y[i] = Y[i-1] + (-9*f(T[i-4], Y[i-4]) + 37*f(T[i-3], Y[i-3]) - 59*f(T[i-2], Y[i-2]) + 55*f(T[i-1], Y[i-1]))*h/24
+    return T, Y
+
 def generate_plot(T, Y, Y_true, title):
     import matplotlib.pyplot as plt
     pad = 0.1
@@ -108,3 +120,7 @@ generate_plot(T, Y, Y_true, "Forward Euler (implicit)")
 T, Y = runge_kutta_4(ti, tf, N)
 Y_true = ytrue(T)
 generate_plot(T, Y, Y_true, "Runge-Kutta 4")
+
+T, Y = adams_moulton_4(ti, tf, N)
+Y_true = ytrue(T)
+generate_plot(T, Y, Y_true, "Adams-Moulton 4")
