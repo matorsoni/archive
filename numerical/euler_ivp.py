@@ -104,23 +104,27 @@ def generate_plot(T, Y, Y_true, title):
     plt.legend(["Numerical", "Analytical"], loc="upper right")
     plt.show()
 
-h = 0.01
+H = [0.2, 0.1, 0.05, 0.01, 0.0001]
 ti = 0.0
 tf = 4.6
-N = int((tf-ti) / h)
+N = [int((tf-ti) / h) for h in H]
 
-T, Y = forward_euler(ti, tf, N)
-Y_true = ytrue(T)
-generate_plot(T, Y, Y_true, "Forward Euler (explicit)")
+for i,n in enumerate(N):
+    T, Y = forward_euler(ti, tf, n)
+    Y_true = ytrue(T)
+    generate_plot(T, Y, Y_true, f"Forward Euler (explicit), k={H[i]}")
 
-T, Y = backward_euler(ti, tf, N)
-Y_true = ytrue(T)
-generate_plot(T, Y, Y_true, "Forward Euler (implicit)")
+for i,n in enumerate(N):
+    T, Y = backward_euler(ti, tf, n)
+    Y_true = ytrue(T)
+    generate_plot(T, Y, Y_true, f"Forward Euler (implicit), k={H[i]}")
 
-T, Y = runge_kutta_4(ti, tf, N)
-Y_true = ytrue(T)
-generate_plot(T, Y, Y_true, "Runge-Kutta 4")
+for i,n in enumerate(N):
+    T, Y = runge_kutta_4(ti, tf, n)
+    Y_true = ytrue(T)
+    generate_plot(T, Y, Y_true, f"Runge-Kutta 4, k={H[i]}")
 
-T, Y = adams_moulton_4(ti, tf, N)
-Y_true = ytrue(T)
-generate_plot(T, Y, Y_true, "Adams-Moulton 4")
+for i,n in enumerate(N):
+    T, Y = adams_moulton_4(ti, tf, n)
+    Y_true = ytrue(T)
+    generate_plot(T, Y, Y_true, f"Adams-Moulton 4, k={H[i]}")
