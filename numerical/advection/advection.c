@@ -8,7 +8,8 @@
 #define XMAX 2.0
 #define H ((XMAX - XMIN) / (NX - 1))
 #define K 0.01
-const double a = 1.0;
+#define A 1.0
+#define COURANT ((A)*(K)/(H))
 
 double U[NT][NX];
 double X[NX];
@@ -18,12 +19,23 @@ double eta(double x) {
     return cond * 1.0 + !cond * 2.0;
 }
 
-void upwind(int n) {
-    const double courant = a*K/H;
-    U[n][0] = U[n-1][0];
+void apply_explicit_scheme(int n, double alpha) {
     for (int i = 1; i < NX; ++i) {
-        U[n][i] = U[n-1][i] - courant * (U[n-1][i] - U[n-1][i-1]);
+        const double UW = U[n-1][i] - U[n-1][i-1];
+        const double DW = U[n-1][i+1] - U[n-1][i];
+        U[n][i] = U[n-1][i] - COURANT * (alpha * DW + (1.0-alpha) * UW);
     }
+    // Boundary conditions
+    U[n][0] = U[n-1][0];
+    U[n][NX-1] = U[n-1][NX-1];
+}
+
+void upwind(int n) {
+    apply_explicit_scheme(n, 0.0);
+}
+
+void downwind(int n) {
+    apply_explicit_scheme(n, 1.0);
 }
 
 int main() {
