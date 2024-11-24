@@ -21,9 +21,9 @@ double eta(double x) {
 
 void apply_explicit_scheme(int n, double alpha) {
     for (int i = 1; i < NX-1; ++i) {
-        const double UW = U[n-1][i] - U[n-1][i-1];
-        const double DW = U[n-1][i] - U[n-1][i+1];
-        U[n][i] = U[n-1][i] - COURANT * (alpha * DW + (1.0-alpha) * UW);
+        const double UW = (U[n-1][i] - U[n-1][i-1]) / H;
+        const double DW = (U[n-1][i+1] - U[n-1][i]) / H;
+        U[n][i] = U[n-1][i] - A * K * (alpha * DW + (1.0-alpha) * UW);
     }
     // Boundary conditions
     U[n][0] = U[n-1][0];
