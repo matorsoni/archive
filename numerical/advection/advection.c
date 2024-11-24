@@ -20,9 +20,9 @@ double eta(double x) {
 }
 
 void apply_explicit_scheme(int n, double alpha) {
-    for (int i = 1; i < NX; ++i) {
+    for (int i = 1; i < NX-1; ++i) {
         const double UW = U[n-1][i] - U[n-1][i-1];
-        const double DW = U[n-1][i+1] - U[n-1][i];
+        const double DW = U[n-1][i] - U[n-1][i+1];
         U[n][i] = U[n-1][i] - COURANT * (alpha * DW + (1.0-alpha) * UW);
     }
     // Boundary conditions
@@ -38,6 +38,36 @@ void downwind(int n) {
     apply_explicit_scheme(n, 1.0);
 }
 
+void centered(int n) {
+    apply_explicit_scheme(n, 0.5);
+}
+
+void lax_friedrich(int n) {
+    const double alpha = 0.5*(1.0 - 1.0/COURANT);
+    apply_explicit_scheme(n, alpha);
+}
+
+void lax_wendroff(int n) {
+    const double alpha = 0.5*(1.0 - COURANT);
+    apply_explicit_scheme(n, alpha);
+}
+
+void write_results(const char* filename) {
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Error opening the file");
+        return;
+    }
+
+    fprintf(file, "X\tU[n=0]\tU[n=10]\tU[n=20]\tU[n=30]\tU[n=40]\n");
+    for (int i = 0; i < NX; i++) {
+        fprintf(file, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", X[i], U[0][i], U[10][i], U[20][i], U[30][i], U[40][i]);
+    }
+
+    fclose(file);
+    printf("File '%s' generated successfully.\n", filename);
+}
+
 int main() {
 
     // Fill X values
@@ -50,6 +80,10 @@ int main() {
         U[0][i] = eta(X[i]);
     }
 
+    printf("Delta x: %lf\n", H);
+    printf("Delta t: %lf\n", K);
+    printf("Velocity (a): %lf\n", A);
+    printf("Courant number: %lf\n", COURANT);
     // Run simulation
     for (int n = 1; n < NT; ++n) {
         upwind(n);
@@ -57,20 +91,7 @@ int main() {
 
     // Write results to file
     const char* filename = "output.dat";
-    FILE *file = fopen(filename, "w");
-    if (file == NULL) {
-        perror("Error opening the file");
-        return -1;
-    }
-
-    fprintf(file, "X\tU[n=0]\tU[n=10]\tU[n=20]\tU[n=30]\tU[n=40]\n");
-    for (int i = 0; i < NX; i++) {
-        fprintf(file, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", X[i], U[0][i], U[10][i], U[20][i], U[30][i], U[40][i]);
-    }
-
-    fclose(file);
-    printf("File '%s' generated successfully.\n", filename);
-
+    write_results(filename);
 
     return 0;
 }
