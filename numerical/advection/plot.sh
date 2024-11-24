@@ -1,1 +1,1 @@
-gnuplot -e "set grid; set xlabel 'X'; set ylabel 'U'; set yrange [0.5:2.5]; set title 'Plot of U(x)'; plot 'output.dat' using 1:2 with lines title 'U(x)'; set terminal png; set output 'plot.png'; replot; set terminal x11;"
+gnuplot -e "set grid; set xlabel 'X'; set ylabel 'U'; set yrange [0.5:2.5]; set title 'Plot of U(x)'; plot for [col=2:6] 'output.dat' using 1:col with lines title columnheader; set terminal png; set output 'plot.png'; replot;"

@@ -27,6 +27,7 @@ void upwind(int n) {
 }
 
 int main() {
+
     // Fill X values
     X[0] = XMIN;
     for (int i = 1; i < NX; i++) {
@@ -42,24 +43,21 @@ int main() {
         upwind(n);
     }
 
-    // Write results to files
-    for (int n = 0; n < NT; ++n) {
-        char filename[50];
-        snprintf(filename, 49, "output_%d.dat", n);
-        FILE *file = fopen(filename, "w");
-        if (file == NULL) {
-            perror("Error opening the file");
-            return -1;
-        }
-
-        fprintf(file, "# X\tU[n=%d]\n", n);
-        for (int i = 0; i < NX; i++) {
-            fprintf(file, "%lf\t%lf\n", X[i], U[n][i]);
-        }
-
-        fclose(file);
-        printf("File '%s' generated successfully.\n", filename);
+    // Write results to file
+    const char* filename = "output.dat";
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Error opening the file");
+        return -1;
     }
+
+    fprintf(file, "X\tU[n=0]\tU[n=10]\tU[n=20]\tU[n=30]\tU[n=40]\n");
+    for (int i = 0; i < NX; i++) {
+        fprintf(file, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", X[i], U[0][i], U[10][i], U[20][i], U[30][i], U[40][i]);
+    }
+
+    fclose(file);
+    printf("File '%s' generated successfully.\n", filename);
 
 
     return 0;
