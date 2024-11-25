@@ -5,9 +5,11 @@ a = 1.0  # wave speed
 h = 1.0 / 50  # spatial step
 k = 0.8 * h  # time step (CFL condition)
 CFL = a * k / h  # Courant number
-epsilon = a * h / 2  # direct computation of epsilon
+#epsilon = a * h / 2
+epsilon = 0.0125
 N = 50  # number of grid points (dimension of matrix A)
 
+print(f"Epsilon = {epsilon}")
 # Check stability
 print(f"Courant Number (CFL): {CFL:.2f}")
 if CFL > 1:
