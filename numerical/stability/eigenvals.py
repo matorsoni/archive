@@ -1,6 +1,6 @@
 import numpy as np
 
-N = 50
+N = 51
 a = 1.0
 h = 1.0 / (N-1)
 k = 0.8 * h
