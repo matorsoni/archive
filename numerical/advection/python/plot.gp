@@ -4,7 +4,7 @@ set xlabel "x"
 set ylabel "u(x,t)"
 set xrange [0:1.5]
 set yrange [0:3]
-set title "Numerical vs Analytical Solution at t=0.323s"
+set title "Numerical vs Analytical Solution at t=0.214s"
 set grid
 set style line 1 lc rgb "blue" lw 2 # Analytical solution style (blue line)
 set style line 2 lc rgb "red" pt 6 ps 1.5 # Numerical solution style (red circles)
