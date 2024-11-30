@@ -1,34 +1,45 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Parameters
 ax = 0
 bx = 1
-m = 100  # Number of spatial points (excluding boundaries)
+m = 100
+h = (bx - ax) / (m + 1)
+k = 0.4 * h
 tfinal = 0.2
+nsteps = int(np.round(tfinal / k))
 
-h = (bx - ax) / (m + 1)  # Spatial step size
-k = 0.4 * h             # Time step size
-x = np.linspace(ax, bx, m + 2)  # Grid points, including boundaries
-
-I = np.arange(1, m + 1)  # Indices for interior points
-nsteps = int(np.round(tfinal / k))  # Number of time steps
+# Constant vectors
+X = np.linspace(ax, bx, m + 2)
+I = np.arange(1, m + 1)
+I_ = np.arange(1, m)
 
 # Initial condition
-def eta(x):
-    return 2.0 - 1. * (x >= 0.2).astype(float)  # Heaviside step function
+def eta(X):
+    return 2.0 - 1. * (X >= 0.2).astype(float)  # Heaviside step function
 
-u = eta(x)
+U = eta(X)
 
 # Main time-stepping loop
 for n in range(nsteps):
-    u[I] = u[I] - (k / (2 * h)) * (u[I]**2 - u[I-1]**2)  # Corrected Upwind flux
+
+    # Regular upwind
+    #U[I] = U[I] - (k/h)*U[I]*(U[I] - U[I-1])
+
+    # Delayed upwind
+    #U[I] = U[I] - (k/h)*U[I-1]*(U[I] - U[I-1])
+
+    # Conservative Upwind
+    #U[I] = U[I] - (k/(2*h)) * (U[I]**2 - U[I-1]**2)
+
+    # Lax-Friedrichs
+    U[I_] = 0.5 * (U[I_-1] + U[I_+1]) - (k/(4*h)) * (U[I_+1]**2 - U[I_-1]**2)
 
     # Dirichlet boundary conditions (reflective)
-    u[0] = u[1]
-    u[-1] = u[-2]
+    U[0] = U[1]
+    U[-1] = U[-2]
 
 # Save data for plotting
 output_file = "output.dat"
-np.savetxt(output_file, np.c_[x, eta(x - k*nsteps), u], header="X FTRUE U", comments="")
+np.savetxt(output_file, np.c_[X, eta(X - k*nsteps), U], header="X FTRUE U", comments="")
 print(f"File '{output_file}' generated.")
