@@ -19,7 +19,7 @@ def step(X):
 
 def gauss(X):
     var = 400
-    return np.exp(-var*(X-0.2)**2) + 1
+    return np.exp(-var*(X-0.2)**2)
 
 # Buckley-Leverett function for water flux wrt saturation
 a = 0.5
@@ -30,7 +30,7 @@ def df_water(X):
     return (2*a*X*(1-X)) / (X**2 + a*(1-X)**2)**2
 
 # Initial condition
-eta = step
+eta = gauss
 U_lax = eta(X)
 U = eta(X)
 
@@ -38,13 +38,13 @@ U = eta(X)
 for n in range(nsteps):
 
     # Regular upwind
-    U[I] = U[I] - (k/h)*df_water(U[I])*(U[I] - U[I-1])
+    #U[I] = U[I] - (k/h)*df_water(U[I])*(U[I] - U[I-1])
 
     # Delayed upwind
     #U[I] = U[I] - (k/h)*df_water(U[I-1])*(U[I] - U[I-1])
 
     # Conservative Upwind
-    #U[I] = U[I] - (k/h) * (f_water(U[I]) - f_water(U[I-1]))
+    U[I] = U[I] - (k/h) * (f_water(U[I]) - f_water(U[I-1]))
 
     U[0] = U[1]
     U[-1] = U[-2]
