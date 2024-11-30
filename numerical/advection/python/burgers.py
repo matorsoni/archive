@@ -1,53 +1,34 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-# Constants
-NX = 150
-NT = 1000
-XMIN = 0.0
-XMAX = 1.0
-H = (XMAX - XMIN) / (NX - 1)
-K = 0.4 * H
-A = 1.0
-COURANT = A * K / H
-TF = 40
+# Parameters
+ax = 0
+bx = 1
+m = 100  # Number of spatial points (excluding boundaries)
+tfinal = 0.2
 
-print(f"h = {H}, k = {K}, a = {A}, Courant = {COURANT}, TFinal = {TF * K}")
+h = (bx - ax) / (m + 1)  # Spatial step size
+k = 0.4 * h             # Time step size
+x = np.linspace(ax, bx, m + 2)  # Grid points, including boundaries
 
-# Global arrays
-U = np.zeros((NT, NX))
-X = np.linspace(XMIN, XMAX, NX)
-FTRUE = np.zeros((NT, NX))
-
-# Step function
-def step(x):
-    return 1.0 if x > 0.25 else 2.0
+I = np.arange(1, m + 1)  # Indices for interior points
+nsteps = int(np.round(tfinal / k))  # Number of time steps
 
 # Initial condition
-eta = np.vectorize(step)
-U[0, :] = eta(X)
+def eta(x):
+    return 2.0 - 1. * (x >= 0.2).astype(float)  # Heaviside step function
 
-# Numerical schemes
-def upwind_1():
-    for n in range(1, NT):
-        for i in range(1, NX-1):
-            U[n, i] = U[n-1,i] - (K / H) * U[n-1,i] * (U[n-1,i] - U[n-1,i-1])
-    # Periodic boundary conditions
-    U[n, 0] = U[n-1, 0] - (K / H) * (U[n-1, 0] * (U[n-1, 0] - U[n-1, NX-2]))
-    U[n, NX-1] = U[n, 0]
+u = eta(x)
 
-# Exact solution
-for t in range(NT):
-    FTRUE[t, :] = eta(X - A * t * K)
+# Main time-stepping loop
+for n in range(nsteps):
+    u[I] = u[I] - (k / (2 * h)) * (u[I]**2 - u[I-1]**2)  # Corrected Upwind flux
 
-### Run simulation
-upwind_1()
-#upwind_2()
-#conservative_upwind()
-#conservative_lax_friedrichs()
-
+    # Dirichlet boundary conditions (reflective)
+    u[0] = u[1]
+    u[-1] = u[-2]
 
 # Save data for plotting
 output_file = "output.dat"
-np.savetxt(output_file, np.c_[X, FTRUE[TF, :], U[TF, :]], header="X FTRUE U", comments="")
-
+np.savetxt(output_file, np.c_[x, eta(x - k*nsteps), u], header="X FTRUE U", comments="")
 print(f"File '{output_file}' generated.")
