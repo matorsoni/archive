@@ -15,7 +15,7 @@ I = np.arange(1, m + 1)
 I_ = np.arange(1, m)
 
 def step(X):
-    return 2.0 - 1. * (X >= 0.2).astype(float)
+    return 0.8 - 0.5 * (X >= 0.2).astype(float)
 
 def gauss(X):
     var = 400
