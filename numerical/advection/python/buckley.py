@@ -19,7 +19,7 @@ def step(X):
 
 def gauss(X):
     var = 400
-    return np.exp(-var*(X-0.2)**2)
+    return 0.8*np.exp(-var*(X-0.2)**2)
 
 # Buckley-Leverett function for water flux wrt saturation
 a = 0.5
