@@ -41,7 +41,7 @@ void update_hp(int* hp) {
 
 int main(void)
 {
-    const int N = 100000000;
+    const int N = 1024 * 1024 * 1024 / 8;
     clock_t tic, toc;
 
     tic = clock();

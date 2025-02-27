@@ -7,7 +7,7 @@ typedef union {
 
 typedef union {
     vec4f cols[4];
-    float data[4][4];
+    float data[16];
 } mat4f;
 
 #define EX4F (vec4f){.data = {1.0f, 0.0f, 0.0f, 0.0f}}
@@ -24,14 +24,14 @@ void print_vec4f(const vec4f* a) {
 
 void print_mat4f(const mat4f* A) {
     printf(
-        "%.6f %.6f %.6f %.6f\n" \
-        "%.6f %.6f %.6f %.6f\n" \
-        "%.6f %.6f %.6f %.6f\n" \
-        "%.6f %.6f %.6f %.6f\n",
-        A->data[0][0], A->data[1][0], A->data[2][0], A->data[3][0],
-        A->data[0][1], A->data[1][1], A->data[2][1], A->data[3][1],
-        A->data[0][2], A->data[1][2], A->data[2][2], A->data[3][2],
-        A->data[0][3], A->data[1][3], A->data[2][3], A->data[3][3]
+        "[%.6f %.6f %.6f %.6f]\n" \
+        "[%.6f %.6f %.6f %.6f]\n" \
+        "[%.6f %.6f %.6f %.6f]\n" \
+        "[%.6f %.6f %.6f %.6f]\n",
+        A->data[0], A->data[4], A->data[8],  A->data[12],
+        A->data[1], A->data[5], A->data[9],  A->data[13],
+        A->data[2], A->data[6], A->data[10], A->data[14],
+        A->data[3], A->data[7], A->data[11], A->data[15]
     );
 }
 
@@ -106,6 +106,18 @@ int main() {
     printf("\n");
     mat4f A = matmul_mat4f(&(mat4f){.cols = {a, a, a, a}}, &ID4F);
     print_mat4f(&A);
+
+/*    mat4 A;
+    vec4 v;
+    vec4 b = mvmul4f(A, v);
+    mat4 B = mmul4f(A,A);
+    vec c = vmul4f()
+    vec4 u = dot4f(v, b);
+    vec4 t = red4f(v);
+    vec4 v = vadd4f()
+    madd4f
+*/
+
 
     return 0;
 }
