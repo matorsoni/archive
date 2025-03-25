@@ -7,7 +7,6 @@ void print_vec4f(const vec4f v) {
     printf("[%.6f %.6f %.6f %.6f]\n", v.x, v.y, v.z, v.w);
 }
 
-
 void print_mat4f(const mat4f A) {
     printf(
         "[[%.6f %.6f %.6f %.6f]\n" \
