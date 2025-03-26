@@ -151,7 +151,7 @@ int main()
     err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &mem_objects[2]);
     assert(err == CL_SUCCESS);
 
-    // Finally enqueue the kernel to be processed
+    // Finally enqueue the kernel to be processed.
     size_t global_work_size = ARRAY_SIZE;
     size_t local_work_size = 1;
     err = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global_work_size, &local_work_size, 0, NULL, NULL);
