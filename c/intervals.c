@@ -84,5 +84,7 @@ int main(void) {
     insert(intervals, n, (interval){.x = 11, .y = 20});
     print_intervals(intervals, n);
 
+    insert(intervals, n, (interval){.x = 2, .y = 28});
+    print_intervals(intervals, n);
     return 0;
 }

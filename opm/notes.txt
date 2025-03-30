@@ -1,4 +1,8 @@
 First reservoir simulation with Flow:
 https://opm-project.org/?page_id=197
 
-
+Frustrating experience trying to install libecl to visualize data,
+this was the best resource from Dr Blatt.
+It requires an old version of Conan (<1.59 from what I could gather)
+for the cmake build to work.
+https://github.com/blattms/libecl
