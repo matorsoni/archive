@@ -154,11 +154,13 @@ int main(int argc, char** argv) {
         "__kernel void convolve(__global const uint* input, __global const uint* mask, __global uint* output, const uint input_width, const uint mask_width) {\n"
         "   const int x = get_global_id(0);\n"
         "   const int y = get_global_id(1);\n"
-        "   //uint sum = 0;\n"
-        "   //for (int r = 0; r < mask_width; r++) {\n"
-        "   //    const int ;\n"
-        "   //}\n"
-        "   uint sum = y * get_global_size(0) + x;"
+        "   uint sum = 0;\n"
+        "   for (int r = 0; r < mask_width; r++) {\n"
+        "       const int idx = (y + r) * input_width + x;\n"
+        "       for (int c = 0; c < mask_width; c++) {\n"
+        "           sum += mask[r * mask_width + c] * input[idx + c];\n"
+        "       }\n"
+        "   }\n"
         "   output[y * get_global_size(0) + x] = sum;\n"
         "}\n";
     cl_program program = clCreateProgramWithSource(context, 1, &src, NULL, &err); assert(err == CL_SUCCESS);
@@ -208,9 +210,9 @@ int main(int argc, char** argv) {
     err = clSetKernelArg(kernel, 4, sizeof(cl_uint), &ker_mask_width); assert(err == CL_SUCCESS);
 
     // enqueue kernel
-    size_t global_work_size[1] = { output_width * output_height };
-    size_t local_work_size[1] = { 1 };
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL); assert(err == CL_SUCCESS);
+    size_t global_work_size[2] = { output_width, output_height };
+    size_t local_work_size[2] = { 1, 1 };
+    err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, NULL); assert(err == CL_SUCCESS);
 
     // read output
     err = clEnqueueReadBuffer(queue, mem_objects[2], CL_TRUE, 0, output_width * output_height * sizeof(cl_uint), output, 0, NULL, NULL);
