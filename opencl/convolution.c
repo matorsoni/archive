@@ -7,6 +7,22 @@
 #define MAX_NUM_PLATFORMS 5
 #define ARRAY_SIZE 1024
 
+#define input_width 8
+#define input_height 8
+#define mask_width 3
+#define mask_height 3
+#define output_width 6
+#define output_height 6
+
+void print_matrix(cl_uint* data, int width, int height) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            printf("%d, ", data[i*width + j]);
+        }
+        printf("\n");
+    }
+}
+
 int main(int argc, char** argv) {
     cl_int err;
 
@@ -39,16 +55,21 @@ int main(int argc, char** argv) {
         printf("\n");
     }
 
-    cl_platform_id platform = plat_ids[0];
-
-    // query devices in the platform
+    cl_platform_id platform;
+    cl_device_type type = CL_DEVICE_TYPE_CPU;
     cl_uint num_devices;
     cl_device_id device_ids[5];
-    // CL_DEVICE_TYPE_ALL, CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_GPU,
-    // CL_DEVICE_TYPE_DEFAULT, CL_DEVICE_TYPE_CUSTOM, CL_DEVICE_TYPE_ACCELERATOR
-    cl_device_type device_type = CL_DEVICE_TYPE_ALL;
-    err = clGetDeviceIDs(platform, device_type, 5, device_ids, &num_devices); assert(err == CL_SUCCESS);
-    printf("Devices found: %d\n\n", num_devices);
+    for (int i = 0; i < num_platforms; i++) {
+        // query devices in the platform
+        err = clGetDeviceIDs(plat_ids[i], CL_DEVICE_TYPE_CPU, 0, NULL, &num_devices);
+        //assert(err == CL_SUCCESS);
+        if (num_devices > 0) {
+            printf("Devices found: %d\n\n", num_devices);
+            platform = plat_ids[i];
+            err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, num_devices, device_ids, NULL); assert(err == CL_SUCCESS);
+            break;
+        }
+    }
 
     // print devices info
     for (cl_uint i = 0; i < num_devices; i++) {
@@ -105,7 +126,7 @@ int main(int argc, char** argv) {
         (cl_context_properties)platform,
         0
     };
-    cl_context context = clCreateContextFromType(context_properties, CL_DEVICE_TYPE_GPU, NULL, NULL, &err); assert(err == CL_SUCCESS);
+    cl_context context = clCreateContextFromType(context_properties, type, NULL, NULL, &err); assert(err == CL_SUCCESS);
 
     // print context info
     cl_uint context_ref_count;
@@ -130,9 +151,15 @@ int main(int argc, char** argv) {
 
     // create program object and build its source, checking for compile errors
     const char* src =
-        "__kernel void hello_kernel(__global const float* a, __global const float* b, __global float* c) {\n"
-        "   int gid = get_global_id(0);\n"
-        "   c[gid] = a[gid] + b[gid];\n"
+        "__kernel void convolve(__global const uint* input, __global const uint* mask, __global uint* output, const uint input_width, const uint mask_width) {\n"
+        "   const int x = get_global_id(0);\n"
+        "   const int y = get_global_id(1);\n"
+        "   //uint sum = 0;\n"
+        "   //for (int r = 0; r < mask_width; r++) {\n"
+        "   //    const int ;\n"
+        "   //}\n"
+        "   uint sum = y * get_global_size(0) + x;"
+        "   output[y * get_global_size(0) + x] = sum;\n"
         "}\n";
     cl_program program = clCreateProgramWithSource(context, 1, &src, NULL, &err); assert(err == CL_SUCCESS);
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
@@ -143,35 +170,52 @@ int main(int argc, char** argv) {
     }
 
     // create kernel object
-    cl_kernel kernel = clCreateKernel(program, "hello_kernel", &err); assert(err == CL_SUCCESS);
+    cl_kernel kernel = clCreateKernel(program, "convolve", &err); assert(err == CL_SUCCESS);
 
     // create memory objects
-    float a[ARRAY_SIZE];
-    float b[ARRAY_SIZE];
-    float c[ARRAY_SIZE] = {0};
-    for (int i=0; i < ARRAY_SIZE; i++) {
-        a[i] = (float)i;
-        b[i] = (float)(2 * i);
-    }
-    printf("Input values:\na = [%f, %f, %f, ...]\nb = [%f, %f, %f, ...]\n", a[0], a[1], a[2], b[0], b[1], b[2]);
+    cl_uint input[input_width * input_height] = {
+        3, 1, 1, 4, 8, 2, 1, 3,
+        4, 2, 1, 1, 2, 1, 2, 3,
+        4, 4, 4, 4, 3, 2, 2, 2,
+        9, 8, 3, 8, 9, 0, 0, 0,
+        9, 3, 3, 9, 0, 0, 0, 0,
+        0, 9, 0, 8, 0, 0, 0, 0,
+        3, 0, 8, 8, 9, 4, 4, 4,
+        5, 9, 8, 1, 8, 1, 1, 1
+    };
+    cl_uint mask[mask_width * mask_height] = {
+        1, 1, 1,
+        1, 0, 1,
+        1, 1, 1
+    };
+    cl_uint output[output_width * output_height] = {0};
+    printf("Input values:\n");
+    print_matrix(input, input_width, input_height);
+    printf("\nMask values:\n");
+    print_matrix(mask, mask_width, mask_height);
     cl_mem mem_objects[3];
-    mem_objects[0] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(a), a, &err); assert(err == CL_SUCCESS);
-    mem_objects[1] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(b), b, &err); assert(err == CL_SUCCESS);
-    mem_objects[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(c), NULL, &err); assert(err == CL_SUCCESS);
+    mem_objects[0] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(input), input, &err); assert(err == CL_SUCCESS);
+    mem_objects[1] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(mask), mask, &err); assert(err == CL_SUCCESS);
+    mem_objects[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(output), NULL, &err); assert(err == CL_SUCCESS);
 
     // set kernel args
     err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &mem_objects[0]); assert(err == CL_SUCCESS);
     err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &mem_objects[1]); assert(err == CL_SUCCESS);
     err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &mem_objects[2]); assert(err == CL_SUCCESS);
+    cl_uint ker_input_width = input_width;
+    cl_uint ker_mask_width = mask_width;
+    err = clSetKernelArg(kernel, 3, sizeof(cl_uint), &ker_input_width); assert(err == CL_SUCCESS);
+    err = clSetKernelArg(kernel, 4, sizeof(cl_uint), &ker_mask_width); assert(err == CL_SUCCESS);
 
     // enqueue kernel
-    size_t global_work_size[1] = { ARRAY_SIZE };
+    size_t global_work_size[1] = { output_width * output_height };
     size_t local_work_size[1] = { 1 };
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL); assert(err == CL_SUCCESS);
 
     // read output
-    err = clEnqueueReadBuffer(queue, mem_objects[2], CL_TRUE, 0, ARRAY_SIZE * sizeof(float), c, 0, NULL, NULL);
-    printf("Output values:\nc = [%f, %f, %f, ...]\n", c[0], c[1], c[2]);
+    err = clEnqueueReadBuffer(queue, mem_objects[2], CL_TRUE, 0, output_width * output_height * sizeof(cl_uint), output, 0, NULL, NULL);
+    printf("\nOutput values:\n");
+    print_matrix(output, output_width, output_height);
 
     return 0;
 }
