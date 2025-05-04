@@ -1,1 +1,1 @@
-g++ -o demo learn.cpp -lOpenCL -g
+gcc hellocl.c -lOpenCL -g
