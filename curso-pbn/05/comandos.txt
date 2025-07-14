@@ -1,0 +1,30 @@
+gdb ./a.out
+
+break main
+run
+info proc mappings //(mostra o mapeamento de memoria do executavel)
+
+x /8xb &global_data //(x de examine! inspeciona 8 bytes a partir do endereco de memoria hexadecimal)
+
+x /16xb 0x400000 //(nao mapeado)
+x /16xb 0x555555554000 //(inicio do mapeamento de memoria: 0x7f 0x45 0x4c 0x46 ... = ELF magic number!)
+x /4 0x7fffffffdc1c //(tambem funciona sem os args xb, apenas quantos bytes)
+
+x /s str //(ler como string)
+x /32c //(ler 32 characteres)
+
+
+###################
+
+gdb ./salve
+
+break _start
+run
+
+disassemble _start
+//(set disassembly-flavor intel para o GDB exibir na sintaxe Intel)
+
+
+x /32xb &msg
+
+ 
