@@ -53,6 +53,23 @@ print_eol:
 
 ; ----------------------------------------------------------
 
+i64_count_digits:
+    mov rcx, 1
+    mov r8, 10
+    mov rax, rdi
+.loop:
+    xor rdx, rdx
+    div r8
+    cmp rax, 0
+    je .return
+
+    inc rcx
+    jmp .loop
+
+.return:
+    mov rax, rcx
+    ret
+
 _start:
     xor r10, r10                    ; set counter to zero
 .argv_loop:
@@ -66,8 +83,10 @@ _start:
     jmp .argv_loop
 
 _exit_success:
+    mov rdi, 12345
+    call i64_count_digits
+    mov rdi, rax
     mov rax, 60
-    xor rdi, rdi
     syscall
 
 ; ----------------------------------------------------------
