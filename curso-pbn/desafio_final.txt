@@ -1,0 +1,10 @@
+Jogo da adivinhacao
+O programa deve gerar um numero aleatorio de 1 a 100
+O jogador da uma entrada + enter
+
+Se 'q', quit com uma mensagem engracadinha
+Se nao for q nem numero, avisar e pedir novamente
+Se numero for menor/maior do que o certo, avisar e pedir novamente e adicionar a um contador de tentativas
+Se numero for o certo, avisar e printar o numero de tentativas
+
+
