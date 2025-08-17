@@ -16,6 +16,12 @@ section .rodata
     msg db `Hello!\n`
     msg_len equ $ - msg
 
+    msg_read_fail db `Error: nothing was read :(\n`
+    msg_read_fail_len equ $ - msg_read_fail
+
+    msg_give_up db `Never gonna give you up...\n`
+    msg_give_up_len equ $ - msg_give_up
+
 section .bss
     read_buf resb READ_BUF_SIZE
     count resq 1
@@ -27,10 +33,6 @@ _print:
     mov rax, SYS_WRITE
     mov rdi, STDOUT_FD
     syscall
-    ret
-
-_exit:
-
     ret
 
 ;_check_valid_number:
@@ -67,12 +69,35 @@ _start:
     mov rdx, READ_BUF_SIZE-1
     syscall
 
-    ; Check if nothing was read
+    ; Check if read stdin failed
     cmp rax, 0
-    je .exit_error
+    je .error_read_fail
+
+    ; Make sure read_buf is null terminated
+    mov byte [read_buf + rax], 0
+
+    ; Remove last character if it is '\n' (0x0a)
+    xor rbx, rbx
+    mov bl, byte [read_buf + rax - 1]
+    cmp bl, EOL_CHAR
+    jne .buffer_ready
+    mov byte [read_buf + rax - 1], 0
+    dec rax
+
+.buffer_ready:
 
     ; Save number of bytes read into count
     mov [count], rax
+
+    ; Check if 'q' (0x71) was typed
+    cmp rax, 1
+    jne .dont_give_up
+    xor rbx, rbx
+    mov bl, byte [read_buf]
+    cmp bl, 0x71
+    je .give_up
+
+.dont_give_up:
 
     mov rsi, read_buf
     mov rdx, [count]
@@ -94,3 +119,15 @@ _start:
     mov rax, SYS_EXIT
     mov rdi, EXIT_FAIL
     syscall
+
+.error_read_fail:
+    mov rsi, msg_read_fail
+    mov rdx, msg_read_fail_len
+    call _print
+    jmp .exit_error
+
+.give_up:
+    mov rsi, msg_give_up
+    mov rdx, msg_give_up_len
+    call _print
+    jmp .exit_success
