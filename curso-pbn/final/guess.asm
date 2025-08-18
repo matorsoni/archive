@@ -1,5 +1,3 @@
-%include "pbn_utils.asm"
-
 %define SYS_READ  0
 %define SYS_WRITE 1
 %define SYS_EXIT  60
@@ -9,6 +7,8 @@
 
 %define EXIT_SUCCESS 0
 %define EXIT_FAIL    1
+
+%define EOL_CHAR     0x0a
 
 %define READ_BUF_SIZE 256
 
@@ -31,8 +31,11 @@ section .rodata
     msg_you_got_it db `! You got it!!\n\n`
     msg_you_got_it_len equ $ - msg_you_got_it
 
-    msg_try_again db `Nope! Try again.\n\n`
-    msg_try_again_len equ $ - msg_try_again
+    msg_try_lower db `Nope! Try a lower number.\n\n`
+    msg_try_lower_len equ $ - msg_try_lower
+
+    msg_try_higher db `Nope! Try a higher number.\n\n`
+    msg_try_higher_len equ $ - msg_try_higher
 
 
 section .bss
@@ -42,6 +45,7 @@ section .bss
 
 
 section .text
+
 _print:
     mov rax, SYS_WRITE
     mov rdi, STDOUT_FD
@@ -52,6 +56,23 @@ _print_input:
     mov rsi, read_buf
     mov rdx, [count]
     call _print
+    ret
+
+_random_1_100:
+    ; using linux syscall:
+    ; ssize_t getrandom(void* buf, size_t len, uint32_t flags)
+    mov rax, 318      ; syscall getrandom
+    mov rdi, random   ; pointer to buffer
+    mov rsi, 8        ; write 8 bytes to buffer
+    xor rdx, rdx      ; flags = 0
+    syscall
+
+    ; [random] now holds a 64 bit random number
+    mov rax, [random]
+    xor rdx, rdx
+    mov rcx, 100
+    div rcx            ; rax = rax / 100, rdx = rax % 100
+    inc rdx            ; rdx in range [0 ... 99] -> [1 ... 100]
     ret
 
 _check_valid_number:
@@ -76,13 +97,11 @@ _check_valid_number:
     jmp .digit_loop
 
 .check_plus:
-
     cmp bl, '+'
     jne .digit_loop
     inc rcx
 
 .digit_loop:
-
     mov bl, byte [rsi+rcx]
     cmp bl, 0                  ; Check if char is '\0'
     je .done
@@ -102,7 +121,6 @@ _check_valid_number:
     cmp rax, 100        ; if rax > 100, set ouf of bounds to true
     jle .next_iter
     mov r9, 1
-
 
 .next_iter:
     inc rcx             ; index++
@@ -125,7 +143,8 @@ global _start
 _start:
 
     ; Save random number to be guessed
-    mov byte [random], 33
+    call _random_1_100
+    mov  [random], rdx
 
 .guess_a_number:
     mov rsi, msg_guess
@@ -160,7 +179,8 @@ _start:
     ; Save number of bytes read into count
     mov [count], rax
 
-    ; Give up if 'q' (0x71) was typed as input
+    ; Give up if input was exactly 'q' (0x71)
+    ; i.e, if [count] == 1 and read_buf[0] == 'q'
     cmp rax, 1
     jne .dont_give_up
     xor rbx, rbx
@@ -180,12 +200,14 @@ _start:
     je .error_out_of_bounds
 
     cmp rax, [random]
-    je .you_got_it
+    jl .try_higher
+    jg .try_lower
 
-    mov rsi, msg_try_again
-    mov rdx, msg_try_again_len
+.you_got_it:
+    call _print_input
+    mov rsi, msg_you_got_it
+    mov rdx, msg_you_got_it_len
     call _print
-    jmp .guess_a_number
 
 .exit_success:
     mov rax, SYS_EXIT
@@ -219,9 +241,15 @@ _start:
     call _print
     jmp .exit_success
 
-.you_got_it:
-    call _print_input
-    mov rsi, msg_you_got_it
-    mov rdx, msg_you_got_it_len
+.try_lower:
+    mov rsi, msg_try_lower
+    mov rdx, msg_try_lower_len
     call _print
-    jmp .exit_success
+    jmp .guess_a_number
+
+.try_higher:
+    mov rsi, msg_try_higher
+    mov rdx, msg_try_higher_len
+    call _print
+    jmp .guess_a_number
+
