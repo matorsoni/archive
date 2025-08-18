@@ -19,6 +19,9 @@ section .rodata
     msg_read_fail db `Error: nothing was read :(\n`
     msg_read_fail_len equ $ - msg_read_fail
 
+    msg_invalid_number db `Error: invalid number\n`
+    msg_invalid_number_len equ $ - msg_invalid_number
+
     msg_give_up db `Never gonna give you up...\n`
     msg_give_up_len equ $ - msg_give_up
 
@@ -35,23 +38,51 @@ _print:
     syscall
     ret
 
-;_check_valid_number:
-;    xor rcx, rcx
-;    xor r8, r8
-;    xor r9, r9
-;.test_signal:
-;    mov r8b, byte[read_buf]
-;    cmp r8b, '-'
-;    jne .check_plus
-;    inc r9
-;    inc rcx
-;    jmp .digit_loop
-;.check_plus:
-;    cmp r8b, '+'
-;    jne .check_digit
-;    inc rcx
-;.digit_loop:
-;    mov r8b, byte[buf + rcx]
+_check_valid_number:
+; input:
+; rsi -> const char* buf
+; output:
+; rax -> 0 if not a valid number, 1 if valid
+    xor rax, rax
+    xor rcx, rcx
+    xor r8, r8
+    xor r9, r9
+
+    ; Check if first char is '-'
+    mov r8b, byte [rsi]
+    cmp r8b, '-'
+    jne .check_plus
+    inc r9
+    inc rcx
+    jmp .digit_loop
+
+.check_plus:
+
+    cmp r8b, '+'
+    jne .digit_loop
+    inc rcx
+
+.digit_loop:
+
+    mov r8b, byte [rsi + rcx]
+    cmp r8b, 0                  ; Check if char is '\0'
+    je .done
+    cmp r8b, 0x30               ; Check if char is a digit: >= '0' (0x30) and <= '9' (0x39)
+    jl .not_a_digit
+    cmp r8b, 0x39
+    jg .not_a_digit
+
+    inc rcx
+    mov rax, 1
+    jmp .digit_loop
+
+.done:
+    ret
+
+.not_a_digit:
+    xor rax, rax
+    ret
+
 
 
 global _start
@@ -103,12 +134,24 @@ _start:
     mov rdx, [count]
     call _print
 
+    mov rsi, read_buf
+    call _check_valid_number
+
+    cmp rax, 0
+    je .error_invalid_number
+
     mov rdi, [count]
     mov rsi, read_buf
     call i64_to_str
 
     mov rsi, read_buf
     call echo_str
+
+
+
+
+
+
 
 .exit_success:
     mov rax, SYS_EXIT
@@ -123,6 +166,12 @@ _start:
 .error_read_fail:
     mov rsi, msg_read_fail
     mov rdx, msg_read_fail_len
+    call _print
+    jmp .exit_error
+
+.error_invalid_number:
+    mov rsi, msg_invalid_number
+    mov rdx, msg_invalid_number_len
     call _print
     jmp .exit_error
 
