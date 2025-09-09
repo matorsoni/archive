@@ -3,12 +3,14 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-
+#include <concepts>
 template<typename T>
 class Thing {
 public:
     Thing();
     ~Thing();
+
+    T get() const { return generic_data; }
 private:
     uint32_t data;
     T generic_data;
@@ -42,6 +44,23 @@ struct str_t
     size_t cap;
 };
 
+
+template<typename T>
+concept has_plus_assign = requires(T a, T b) { { a+=b } -> std::same_as<T&>; };
+
+
+template<has_plus_assign T, size_t M, size_t N>
+struct matrix {
+    T elt[M*N];
+
+    T& operator[] (size_t index) { return elt[index]; }
+    const T& operator[] (size_t index) const { return elt[index]; }
+
+    void operator+= (const matrix<T, M, N>& m) {
+        for (size_t i = 0; i < M*N; ++i) elt[i] += m[i];
+    }
+};
+
 int main(int argc, char** argv) {
     auto t1 = new Thing<uint64_t>;
     delete t1;
@@ -51,6 +70,17 @@ int main(int argc, char** argv) {
 
     auto t3 = new Thing<str_t>;
     delete t3;
+
+
+    matrix<float, 2, 2> m1 = {.elt = {0.f, 1.0f, 2.0f, 3.0f}};
+    matrix<float, 2, 2> m2 = {};
+    m2 += m1;
+    m2 += m2;
+
+    // compilation fails for T == int*
+    //matrix<int, 2, 2> m3 = {};
+    //matrix<int, 2, 2> m4 = {};
+    //m3 += m4;
 
     return 0;
 }
