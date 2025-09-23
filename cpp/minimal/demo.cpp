@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <concepts>
+
 template<typename T>
 class Thing {
 public:
@@ -28,17 +29,26 @@ Thing<T>::~Thing() {
 }
 
 void* operator new(size_t size) {
-    printf("Allocating %zu bytes\n", size);
+    printf("new allocating %zu bytes\n", size);
+    return calloc(1, size);
+}
+
+void* operator new[](size_t size) {
+    printf("new[] allocating %zu bytes\n", size);
     return calloc(1, size);
 }
 
 void operator delete(void* ptr, size_t size) {
-    printf("Freeing memory\n");
+    printf("delete freeing %zu bytes\n", size);
     free(ptr);
 }
 
-struct str_t
-{
+void operator delete[](void* ptr) {
+    printf("delete[] freeing bytes\n");
+    free(ptr);
+}
+
+struct str_t {
     char* str;
     size_t len;
     size_t cap;
@@ -47,7 +57,6 @@ struct str_t
 
 template<typename T>
 concept has_plus_assign = requires(T a, T b) { { a+=b } -> std::same_as<T&>; };
-
 
 template<has_plus_assign T, size_t M, size_t N>
 struct matrix {
@@ -71,15 +80,21 @@ int main(int argc, char** argv) {
     auto t3 = new Thing<str_t>;
     delete t3;
 
+    {
+        Thing<bool> t4;
+    }
 
-    matrix<float, 2, 2> m1 = {.elt = {0.f, 1.0f, 2.0f, 3.0f}};
+    auto* ptr = new int[4];
+    delete[] ptr;
+
+    matrix<float, 2, 2> m1{.elt = {0.f, 1.0f, 2.0f, 3.0f}};
     matrix<float, 2, 2> m2 = {};
     m2 += m1;
     m2 += m2;
 
     // compilation fails for T == int*
-    //matrix<int, 2, 2> m3 = {};
-    //matrix<int, 2, 2> m4 = {};
+    //matrix<int*, 2, 2> m3 = {};
+    //matrix<int*, 2, 2> m4 = {};
     //m3 += m4;
 
     return 0;
