@@ -10,6 +10,8 @@ do
     cd ../..
 done
 
+ln -s opm-simulators/build/bin/flow
+
 # Clone dataset repos
 git clone https://github.com/OPM/opm-data.git
 git clone https://github.com/OPM/opm-tests.git

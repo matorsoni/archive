@@ -1,5 +1,9 @@
-First reservoir simulation with Flow:
-https://opm-project.org/?page_id=197
+Compiling OPM: run 'install_prereqs.sh' and then 'clone_and_build_opm.sh'
+
+First reservoir simulation with Flow: https://opm-project.org/?page_id=197
+./flow opm-data/spe1/SPE1CASE1.DATA
+./flow opm-data/norne/NORNE_ATW2013.DATA
+(output files are written to the same directory as input data)
 
 Frustrating experience trying to install libecl to visualize data,
 this was the best resource from Dr Blatt.
