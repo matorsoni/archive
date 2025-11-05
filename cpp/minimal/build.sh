@@ -1,5 +1,5 @@
 CPP="zig c++"
-COMPILER_FLAGS="-Wall -pedantic -Werror -g -std=c++20 -fno-exceptions"
+COMPILER_FLAGS="-Wall -pedantic -Werror -g -std=c++20 -fno-exceptions -I eigen"
 LINKER_FLAGS=""
 COMPILER_AND_LINKER_FLAGS="-fsanitize=undefined"
 SOURCE="demo.cpp"

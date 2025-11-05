@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <concepts>
 
+#include "Eigen/Dense"
+
 template<typename T>
 class Thing {
 public:
@@ -96,6 +98,9 @@ int main(int argc, char** argv) {
     //matrix<int*, 2, 2> m3 = {};
     //matrix<int*, 2, 2> m4 = {};
     //m3 += m4;
+
+    Eigen::Matrix4f m;
+    printf("%f\n", m(0));
 
     return 0;
 }
